@@ -1,0 +1,6 @@
+{"movielens_1m": ["dbo:basedOn","dbo:cinematography","dbo:director", "dbo:editing", 
+	"dbo:musicComposer","dbo:narrator", "dbo:producer", "dbo:starring", "dct:subject", "dbo:writer"], 
+	"dbpedia" : ["rdf:type", "altogether"],
+	"3cixty" : ["http://data.linkedevents.org/def/location#businessTypeTop","http://data.linkedevents.org/def/location#businessType"]
+}
+
