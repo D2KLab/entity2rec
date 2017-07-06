@@ -1,0 +1,11 @@
+emb/*
+*.pyc
+*.out
+datasets/*
+clustering/*
+benchmarks/*
+features/*
+scripts/*
+ranking/feature_selection/*
+ranking/models/*
+ranking/results/*
