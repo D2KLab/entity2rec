@@ -292,11 +292,9 @@ class entity2rec(entity2vec, entity2rel):
 
         if run_all:
             super(entity2rec, self).run()
-            self._get_embedding_files()
 
-        else:
-            self._get_embedding_files()
-            self.feature_generator()
+        self._get_embedding_files()
+        self.feature_generator()
 
 
     @staticmethod
@@ -367,7 +365,7 @@ class entity2rec(entity2vec, entity2rel):
 
         parser.add_argument('--test', dest='test', help='test')
 
-        parser.add_argument('--run_all', dest='run_all', default = False, help='If computing also the embeddings')
+        parser.add_argument('--run_all', dest='run_all', action='store_true', default = False, help='If computing also the embeddings')
 
         parser.add_argument('--implicit', dest='implicit', default = False, help='Implicit feedback with boolean values')
 
