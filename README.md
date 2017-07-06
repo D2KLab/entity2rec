@@ -1,7 +1,7 @@
 # entity2rec
 
 Implementation of the entity recommendation algorithm described in "entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation".
-Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can be already computed or can be computed by calling _entity2rec_ using the command line argument `--run_all`. It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
+Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can computed for the first time calling _entity2rec_ using the command line argument `--run_all`. This will run entity2vec and compute property-specific embeddings using node2vec (https://github.com/MultimediaSemantics/entity2vec). It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
 
     python src/entity2rec.py --dataset my_dataset --train training_set.dat --test test_set.dat
 
@@ -27,6 +27,8 @@ As an output, it will generate a set of property-specific relatedness scores in 
 
 This file can be used as input of https://sourceforge.net/p/lemur/wiki/RankLib/ to learn the global relatedness model.
 
+`cd ranking
+java -jar RankLib-2.1-patched.jar -train ../features/your_dataset/train.svm -ranker $ranker -metric2t your_metric -tvs 0.9 -test ../features/your_dataset/test.svm 
 
 ## Requirements
 
