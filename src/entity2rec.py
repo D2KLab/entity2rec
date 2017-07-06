@@ -18,7 +18,7 @@ from random import shuffle
 
 class entity2rec(entity2vec, entity2rel):
 
-	def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file):
+    def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file):
 
         entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class)
 
@@ -128,7 +128,7 @@ class entity2rec(entity2vec, entity2rel):
 
     def collab_similarity(self, user, item):
 
-		#all other properties
+        #all other properties
 
         return self.relatedness_score_by_position(user, item, -1)
 
