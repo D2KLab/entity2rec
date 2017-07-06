@@ -9,8 +9,8 @@ The command accepts all the params of _entity2vec_ and, in addition:
 
 |option          | default                |description |
 |----------------|------------------------|------------|
-|`train`         | null **(Required)**    | Path of the train set in DAT format (see below for syntax) |
-|`test`          | null **(Required)**    | Path of the test set in DAT format (see below for syntax)  |
+|`train`         | null **(Required)**    | Path of the train set |
+|`test`          | null **(Required)**    | Path of the test set |
 |`run_all`       | false                  | If `true`, it runs _entity2vec_ to compute the embeddings before the recommendation task (in this case, it is suggested to add also the related command line arguments (https://github.com/MultimediaSemantics/entity2vec)). Otherwise, it expects that the embeddings are in the `emb\` folder |
 |`implicit`      | false                  | If `true`, it expects that the ratings are binary values (0/1) instead of a range of scores |
 
