@@ -5,11 +5,13 @@ Implementation of the entity recommendation algorithm described in "entity2rec: 
 Before starting:
 
 `mkdir datasets/your_dataset`
+
 `mkdir datasets/your_dataset/graphs`
 
 Move your train and test files inside datasets/your_dataset:
 
 `mv train.dat datasets/your_dataset/train.dat`
+
 `mv test.dat datasets/your_dataset/test.dat`
 
 Create a file containing user feedback of the training set in datasets/your_dataset/graphs/feedback.edgelist:
