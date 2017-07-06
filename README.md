@@ -44,8 +44,9 @@ As an output, entity2rec will generate a set of property-specific relatedness sc
 
 This file can be used as input of https://sourceforge.net/p/lemur/wiki/RankLib/ to learn the global relatedness model.
 
-`cd ranking
-java -jar RankLib-2.1-patched.jar -train ../features/your_dataset/train.svm -ranker $ranker -metric2t your_metric -tvs 0.9 -test ../features/your_dataset/test.svm 
+`cd ranking`
+
+`java -jar RankLib-2.1-patched.jar -train ../features/your_dataset/train.svm -ranker $ranker -metric2t your_metric -tvs 0.9 -test ../features/your_dataset/test.svm`
 
 ## Requirements
 
