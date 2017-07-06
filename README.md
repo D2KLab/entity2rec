@@ -1,9 +1,26 @@
 # entity2rec
 
-Implementation of the entity recommendation algorithm described in "entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation".
-Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which can computed for the first time calling _entity2rec_ using the command line argument `--run_all`. This will run entity2vec and compute property-specific embeddings using node2vec (for the details see https://github.com/MultimediaSemantics/entity2vec). It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
+Implementation of the entity recommendation algorithm described in "entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation". Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information (`movielens_1m/graphs/feedback.edgelist`) and Linked Open Data information (`movielens_1m/graphs/dbpedia_property.edgelist`) on the Movielens 1M dataset. It is based on property-specific entity embeddings, which are obtained via entity2vec (https://github.com/MultimediaSemantics/entity2vec). You can obtain the property-specific embeddings following the indications provided in the entity2vec repository. If you are already familiar with the procedure, you can simply add `--run_all` when you run entity2rec for the first time to compute the embeddings. It adopts by default the _AllItems_ candidate generation for testing, which means that features are computed for each user-item pair that is not appearing in the training set. Thus, for each user, all items in the database can be ranked to obtain top-N item recommendation.
 
-    python src/entity2rec.py --dataset my_dataset --train datasets/my_dataset/training_set.dat --test datasets/my_dataset/test_set.dat --run_all
+Before starting:
+
+`mkdir datasets/your_dataset`
+
+`mkdir datasets/your_dataset/graphs`
+
+Move your train and test files inside datasets/your_dataset:
+
+`mv train.dat datasets/your_dataset/train.dat`
+
+`mv test.dat datasets/your_dataset/test.dat`
+
+Create a file containing user feedback of the training set in datasets/your_dataset/graphs/feedback.edgelist:
+
+`cut -f1,2 datasets/your_dataset/train.dat -d' ' > datasets/your_dataset/graphs/feedback.edgelist`
+
+Then run:
+
+ ` python src/entity2rec.py --dataset my_dataset --train datasets/my_dataset/training_set.dat --test datasets/my_dataset/test_set.dat --run_all`
 
 The command accepts all the params of _entity2vec_ and, in addition:
 
@@ -27,8 +44,9 @@ As an output, entity2rec will generate a set of property-specific relatedness sc
 
 This file can be used as input of https://sourceforge.net/p/lemur/wiki/RankLib/ to learn the global relatedness model.
 
-`cd ranking
-java -jar RankLib-2.1-patched.jar -train ../features/your_dataset/train.svm -ranker $ranker -metric2t your_metric -tvs 0.9 -test ../features/your_dataset/test.svm 
+`cd ranking`
+
+`java -jar RankLib-2.1-patched.jar -train ../features/your_dataset/train.svm -ranker $ranker -metric2t your_metric -tvs 0.9 -test ../features/your_dataset/test.svm`
 
 ## Requirements
 
