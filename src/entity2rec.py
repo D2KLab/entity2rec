@@ -20,7 +20,7 @@ class entity2rec(entity2vec, entity2rel):
 
     def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file):
 
-        entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class)
+        entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file)
 
         entity2rel.__init__(self, True) #binary format embeddings
 
@@ -155,23 +155,24 @@ class entity2rec(entity2vec, entity2rel):
     def parse_user_id(user):
 
         return int(user.strip('user')) #29
-def parse_users_items_rel(self,line):
 
-        line = line.split(' ')
+    def parse_users_items_rel(self,line):
 
-        user = line[0] #user29
+            line = line.split(' ')
 
-        user_id = entity2rec.parse_user_id(user) #29
+            user = line[0] #user29
 
-        item = line[1] #http://dbpedia.org/resource/The_Golden_Child
+            user_id = entity2rec.parse_user_id(user) #29
 
-        relevance = int(line[2]) #5
+            item = line[1] #http://dbpedia.org/resource/The_Golden_Child
 
-        #binarization of the relevance values
-        if self.implicit == False:
-            relevance = 1 if relevance >= 4 else 0
+            relevance = int(line[2]) #5
 
-        return (user, user_id, item, relevance)
+            #binarization of the relevance values
+            if self.implicit == False:
+                relevance = 1 if relevance >= 4 else 0
+
+            return (user, user_id, item, relevance)
 
 
     def write_line(self,user, user_id, item, relevance, file):
