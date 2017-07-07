@@ -46,7 +46,7 @@ This file can be used as input of https://sourceforge.net/p/lemur/wiki/RankLib/ 
 
 `cd ranking`
 
-`java -jar RankLib-2.1-patched.jar -train ../features/your_dataset/train.svm -ranker $ranker -metric2t your_metric -tvs 0.9 -test ../features/your_dataset/test.svm`
+`java -jar RankLib-2.1-patched.jar -train ../features/your_dataset/train.svm -ranker 6 -metric2t P@10 -tvs 0.9 -test ../features/your_dataset/test.svm`
 
 ## Requirements
 
