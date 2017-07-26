@@ -20,7 +20,7 @@ Create a file containing user feedback of the training set in datasets/your_data
 
 Then run:
 
- ` python src/entity2rec.py --dataset my_dataset --train datasets/my_dataset/training_set.dat --test datasets/my_dataset/test_set.dat --run_all`
+ ` python src/entity2rec.py --dataset your_dataset --train datasets/your_dataset/training_set.dat --test datasets/your_dataset/test_set.dat --run_all`
 
 The command accepts all the params of _entity2vec_ and, in addition:
 
