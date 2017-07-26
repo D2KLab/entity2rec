@@ -63,4 +63,4 @@ If you are using `pip`:
 
 ## Our Publications
 
-* Palumbo E., Rizzo G., Troncy R. (2017) entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation. In 11th ACM Conference on Recommender Systems (RecSys) , Como, Italy
+* Palumbo E., Rizzo G., Troncy R. (2017) [entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation. In 11th ACM Conference on Recommender Systems] (https://enricopal.github.io/enricopal.github.io/publications/Palumbo_Rizzo-RecSys2017.pdf) (RecSys) , Como, Italy, 
