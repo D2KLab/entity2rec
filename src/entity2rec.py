@@ -145,18 +145,13 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return np.mean(sims, axis = 0) # return a list of averages of property-specific scores
 
-    @staticmethod
-    def parse_user_id(user):
-
-        return int(user.strip('user'))  # 29
-
     def parse_users_items_rel(self,line):
 
             line = line.split(' ')
 
             user = line[0]  # user29
 
-            user_id = Entity2Rec.parse_user_id(user)  # 29
+            user_id = int(user.strip('user'))  # 29
 
             item = line[1]  # http://dbpedia.org/resource/The_Golden_Child
 
@@ -254,7 +249,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 print(user)
 
-                user_id = Entity2Rec.parse_user_id(user)
+                user_id = int(user.strip('user'))
 
                 candidate_items = self.get_candidates(user)
 
@@ -280,7 +275,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
     def run(self, run_all):
 
         if run_all:
-            super(Entity2Rec, self).run()
+            super(Entity2Rec, self).run() # run entity2vec
 
         self._get_embedding_files()
         self.feature_generator()
