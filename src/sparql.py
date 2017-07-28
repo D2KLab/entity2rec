@@ -9,188 +9,179 @@ import json
 ## contains SPARQL queries to get property-specific subgraphs ##
 ################################################################
 
-class sparql(object):
 
-	def __init__ (self, entities, config_file, dataset, endpoint, default_graph, entity_class):
+class Sparql(object):
 
-		self.entities = entities #file containing a list of entities
+    def __init__ (self, entities, config_file, dataset, endpoint, default_graph, entity_class):
 
-		self.dataset = dataset
+        self.entities = entities  # file containing a list of entities
 
-		self.wrapper = SPARQLWrapper(endpoint)
+        self.dataset = dataset
 
-		self.wrapper.setReturnFormat(JSON)
+        self.wrapper = SPARQLWrapper(endpoint)
 
-		if default_graph:
+        self.wrapper.setReturnFormat(JSON)
 
-			self.default_graph = default_graph
+        if default_graph:
 
-			self.wrapper.addDefaultGraph(self.default_graph)
+            self.default_graph = default_graph
 
-		self.entity_class = entity_class
+            self.wrapper.addDefaultGraph(self.default_graph)
 
-		self.query_prop = "SELECT ?s ?o  WHERE {?s %s ?o. }"
+        self.entity_class = entity_class
 
-		self.query_prop_uri = "SELECT ?s ?o  WHERE {?s %s ?o. FILTER (?s = %s)}"
+        self.query_prop = "SELECT ?s ?o  WHERE {?s %s ?o. }"
 
-		self._define_properties(config_file)
+        self.query_prop_uri = "SELECT ?s ?o  WHERE {?s %s ?o. FILTER (?s = %s)}"
 
+        self._define_properties(config_file)
 
-	def _define_properties(self, config_file):
+    def _define_properties(self, config_file):
 
-		with codecs.open(config_file, 'r', encoding = 'utf-8') as config_read:
+        with codecs.open(config_file, 'r', encoding='utf-8') as config_read:
 
-			property_file = json.loads(config_read.read())
+            property_file = json.loads(config_read.read())
 
-		try:
+        try:
 
-			self.properties = [i for i in property_file[self.dataset]]
-			print(self.properties)
+            self.properties = [i for i in property_file[self.dataset]]
+            print(self.properties)
 
-		except KeyError:
+        except KeyError:
 
-			print("No set of properties provided in the dataset")
+            print("No set of properties provided in the dataset")
 
-			if self.entity_class == False:
+            if not self.entity_class:
 
-				query_all_prop = "SELECT distinct ?p WHERE {?s ?p ?o. FILTER(!isLiteral(?o) && regex(STR(?p),\"dbpedia.org/ontology\"))}"
+                query_all_prop = "SELECT distinct ?p " \
+                                 "WHERE {?s ?p ?o. FILTER(!isLiteral(?o) && regex(STR(?p),\"dbpedia.org/ontology\"))}"
 
-				self._get_properties(query_all_prop)
+                self._get_properties(query_all_prop)
 
-			else:
+            else:
 
-				query_category_prop = "select distinct ?p where { ?s a dbo:Band. ?s ?p ?o. FILTER(!isLiteral(?o) && regex(STR(?p),\"dbpedia.org/ontology\"))}"
+                query_category_prop = "select distinct ?p " \
+                                      "where { ?s a dbo:Band. ?s ?p ?o. " \
+                                      "FILTER(!isLiteral(?o) && regex(STR(?p),\"dbpedia.org/ontology\"))} "
 
-				self._get_properties(query_category_prop)
+                self._get_properties(query_category_prop)
 
+    def _get_properties(self, query):  # get all the properties from sparql endpoint if a list is not provided in config file
 
-	def _get_properties(self, query): #get all the properties from sparql endpoint if a list is not provided in config file
+        self.properties = []
 
-		self.properties = []
+        self.wrapper.setQuery(query)
 
-		self.wrapper.setQuery(query)
+        self.wrapper.setReturnFormat(JSON)
 
-		self.wrapper.setReturnFormat(JSON)
+        for results in self.wrapper.query().convert()['results']['bindings']:
 
-		for results in self.wrapper.query().convert()['results']['bindings']:
+            self.properties.append(results['p']['value'])
 
-			self.properties.append(results['p']['value'])
+        self.properties.append("dct:subject")
 
-		self.properties.append("dct:subject")
+        self.properties.append("rdf:type")
 
-		self.properties.append("rdf:type")
+    def get_property_graphs(self):
 
+        properties = self.properties
 
-	def get_property_graphs(self):
+        if 'feedback' in properties:
+            properties.remove('feedback')  # don't query for the feedback property
 
-		properties = self.properties
+        for prop in properties:  # iterate on the properties
 
-		if 'feedback' in properties:
-			properties.remove('feedback') #don't query for the feedback property
+            prop_short = prop
 
+            prop_namespace = prop
 
-		for prop in properties: #iterate on the properties
+            if '/' in prop:
 
-			prop_short = prop
+                # avoid creating file with a '/' in the name
+                prop_short = prop.split('/')[-1]
 
-			prop_namespace = prop
+                # if it is actually a URI, surround by "<>"
+                if prop.startswith("http"):
+                    prop_namespace = '<'+prop+'>'
 
-			if '/' in prop:
+            try:
+                mkdir('datasets/%s/'% self.dataset)
+                mkdir('datasets/%s/graphs' % self.dataset)
 
-				# avoid creating file with a '/' in the name
-				prop_short = prop.split('/')[-1]
+            except:
+                pass
 
-				# if it is actually a URI, surround by "<>"
-				if prop.startswith("http"):
-					prop_namespace = '<'+prop+'>'
+            with codecs.open('datasets/%s/graphs/%s.edgelist' %(self.dataset, prop_short),'w', encoding='utf-8') as prop_graph: #open a property file graph
 
-			try:
-				mkdir('datasets/%s/'%(self.dataset))
-				mkdir('datasets/%s/graphs' %(self.dataset))
+                if self.entities == "all":
 
-			except:
-				pass
+                    self.wrapper.setQuery(self.query_prop%prop_namespace)
 
+                    for result in self.wrapper.query().convert()['results']['bindings']:
 
-			with codecs.open('datasets/%s/graphs/%s.edgelist' %(self.dataset, prop_short),'w', encoding='utf-8') as prop_graph: #open a property file graph
+                        subj = result['s']['value']
 
-				if self.entities == "all":
+                        obj = result['o']['value']
 
-					self.wrapper.setQuery(self.query_prop%prop_namespace)
+                        print((subj, obj))
 
+                        prop_graph.write('%s %s\n' %(subj, obj))
 
-					for result in self.wrapper.query().convert()['results']['bindings']:
+                else:
 
-						subj = result['s']['value']
+                    with codecs.open('%s'%self.entities,'r', encoding='utf-8') as f:  # open entity file, select only those entities
 
-						obj = result['o']['value']
+                        for uri in f:  # for each entity
 
-						print((subj, obj))
+                            uri = uri.strip('\n')
 
-						prop_graph.write('%s %s\n' %(subj, obj))
+                            uri = '<'+uri+'>'
 
+                            self.wrapper.setQuery(self.query_prop_uri%(prop_namespace,uri))
 
-				else:
+                            for result in self.wrapper.query().convert()['results']['bindings']:
 
-					with codecs.open('%s'%self.entities,'r', encoding='utf-8') as f: #open entity file, select only those entities
+                                subj = result['s']['value']
 
-						for uri in f: #for each entity
+                                obj = result['o']['value']
 
-							uri = uri.strip('\n')
+                                print((subj, obj))
 
-							uri = '<'+uri+'>'
+                                prop_graph.write('%s %s\n' %(subj, obj))
 
-							self.wrapper.setQuery(self.query_prop_uri%(prop_namespace,uri))
+                        f.seek(0)  # reinitialize iterator
 
-							for result in self.wrapper.query().convert()['results']['bindings']:
+    @staticmethod
+    def get_uri_from_wiki_id(wiki_id):
 
-								subj = result['s']['value']
+        sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 
-								obj = result['o']['value']
+        sparql.setQuery("""select ?s where {?s <http://dbpedia.org/ontology/wikiPageID> %d
+           }""" %int(wiki_id))
 
-								print((subj, obj))
+        sparql.setReturnFormat(JSON)
 
-								prop_graph.write('%s %s\n' %(subj, obj))
+        try:
+            uri = sparql.query().convert()['results']['bindings'][0]['s']['value']
 
-						f.seek(0) #reinitialize iterator
+        except:
+            uri = None
 
-
-		return
-
-
-
-	@staticmethod
-	def get_uri_from_wiki_id(wiki_id):
-
-
-		sparql = SPARQLWrapper("http://dbpedia.org/sparql")
-
-		sparql.setQuery("""select ?s where {?s <http://dbpedia.org/ontology/wikiPageID> %d
-		   }""" %int(wiki_id))
-
-		sparql.setReturnFormat(JSON)
-
-		try:
-			uri = sparql.query().convert()['results']['bindings'][0]['s']['value']
-
-		except:
-			uri = None
-
-		return uri
+        return uri
 
 
 if __name__ == '__main__':
 
-	parser = optparse.OptionParser()
-	parser.add_option('-e','--entities', dest = 'entity_file', help = 'entity file name', default = 'all')
-	parser.add_option('-c','--config_file', default='config/properties.json', help='Path to configuration file')
-	parser.add_option('-k','--dataset', dest = 'dataset', help = 'dataset')
-	parser.add_option('-m','--endpoint', dest = 'endpoint', help = 'sparql endpoint')
-	parser.add_option('-d', '--default_graph', dest = 'default_graph', help = 'default graph', default = False)
-	parser.add_option('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
+    parser = optparse.OptionParser()
+    parser.add_option('-e', '--entities', dest = 'entity_file', help = 'entity file name', default='all')
+    parser.add_option('-c', '--config_file', default='config/properties.json', help='Path to configuration file')
+    parser.add_option('-k', '--dataset', dest = 'dataset', help='dataset')
+    parser.add_option('-m', '--endpoint', dest = 'endpoint', help='sparql endpoint')
+    parser.add_option('-d', '--default_graph', dest = 'default_graph', help = 'default graph', default=False)
+    parser.add_option('--entity_class', dest = 'entity_class', help = 'entity class', default=False)
 
-	(options, args) = parser.parse_args()
+    (options, args) = parser.parse_args()
 
-	sparql_query = sparql(options.entity_file, options.config_file, options.dataset, options.endpoint, options.default_graph, options.entity_class)
+    sparql_query = Sparql(options.entity_file, options.config_file, options.dataset, options.endpoint, options.default_graph, options.entity_class)
 
-	sparql_query.get_property_graphs()
+    sparql_query.get_property_graphs()

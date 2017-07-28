@@ -1,8 +1,6 @@
 from __future__ import print_function
-from gensim.models import Word2Vec
-import argparse
 from gensim.models.keyedvectors import KeyedVectors
-from sparql import sparql
+from sparql import Sparql
 import codecs
 import time
 
@@ -10,192 +8,159 @@ import time
 ## Computes a set of relatedness scores between a pair of entities from a set of property-specific Knowledge Graph embeddings ##
 ################################################################################################################################
 
-class entity2rel(object):
 
-	def __init__(self, binary = True):
+class Entity2Rel(object):
 
-		self.binary = binary
-		self.embedding_files = []
+    def __init__(self, binary = True):
 
+        self.binary = binary
+        self.embedding_files = []
 
-	def add_embedding(self, embedding_file):
+    # add embedding file
+    def add_embedding(self, embedding_file):
 
-		self.embedding_files.append(KeyedVectors.load_word2vec_format(embedding_file, binary=self.binary))
+        self.embedding_files.append(KeyedVectors.load_word2vec_format(embedding_file, binary=self.binary))
 
+    # access a particular embedding file and get the relatedness score
+    def relatedness_score_by_position(self,uri1,uri2,pos):
 
-	def relatedness_score_by_position(self,uri1,uri2,pos):
+        try:
 
-		try:
+            score = self.embedding_files[pos].similarity(uri1,uri2)
 
-			score = self.embedding_files[pos].similarity(uri1,uri2)
+        except KeyError:
 
-		except KeyError:
+            score = 0.
 
-			score = 0.
+        return score
 
-		return score
+    # get all the relatedness scores
+    def relatedness_scores(self, uri1, uri2, skip = False):
 
+        scores = []
 
-	def relatedness_scores(self, uri1, uri2, skip = False):
+        if skip:
+            ind = skip
+        else:
+            ind = len(self.embedding_files) #unless provided with a skip index, take them all
 
-		scores = []
+        if uri1 is None or uri2 is None:
 
-		if skip:
-			ind = skip
-		else:
-			ind = len(self.embedding_files) #unless provided with a skip index, take them all
+            scores = [0.]
 
-		if uri1 == None or uri2 == None:
+        for embedding in self.embedding_files[0:ind]:
 
-			scores = [0.]
+            try:
 
+                scores.append(embedding.similarity(uri1,uri2))
 
-		for embedding in self.embedding_files[0:ind]:
+            except KeyError:
 
-			try:
+                scores.append(0.)
 
-				scores.append(embedding.similarity(uri1,uri2))
+        return scores
 
-			except KeyError:
+    # parse ceccarelli benchmark line
+    @staticmethod
+    def parse_ceccarelli_line(line):
 
-				scores.append(0.)
+        line = line.split(' ')
 
-		return scores
+        relevance = int(line[0])
 
+        query_id = int((line[1].split(':'))[1])
 
-	def parse_ceccarelli_line(self, line):
+        doc_id = line[-1]
 
-		line = line.split(' ')
+        ids = line[-2].split('-')
 
-		relevance = int(line[0])
+        wiki_id_query = int(ids[0])
 
-		query_id = int((line[1].split(':'))[1])
+        wiki_id_candidate = int(ids[1])
 
-		doc_id = line[-1]
+        return wiki_id_query, query_id, wiki_id_candidate, relevance, doc_id
 
-		ids = line[-2].split('-')
+    # write line in the svm format
+    def write_line(self, query_uri, qid, candidate_uri, relevance, file, doc_id):
 
-		wiki_id_query = int(ids[0])
+        scores = self.relatedness_scores(query_uri, candidate_uri)
 
-		wiki_id_candidate = int(ids[1])
+        file.write('%d qid:%d' %(relevance,qid))
 
-		return (wiki_id_query, query_id, wiki_id_candidate, relevance, doc_id)
+        count = 1
 
+        l = len(scores)
 
-	def write_line(self, query_uri, qid, candidate_uri, relevance, file, doc_id):
+        for score in scores:
 
-		scores = self.relatedness_scores(query_uri, candidate_uri)
+            if count == l:  # last score, end of line
 
-		file.write('%d qid:%d' %(relevance,qid))
+                file.write(' %d:%f # %s-%s %d\n' %(count,score,query_uri,candidate_uri, int(doc_id)))
 
-		count = 1
+            else:
 
-		l = len(scores)
+                file.write(' %d:%f' %(count,score))
 
-		for score in scores:
+                count += 1
 
-			if count == l: #last score, end of line
+    def feature_generator(self, data):
 
-				file.write(' %d:%f # %s-%s %d\n' %(count,score,query_uri,candidate_uri, int(doc_id)))
+        data_name = (data.split('/')[-1]).split('.')[0]
 
-			else:
+        with codecs.open('features/ceccarelli/%s.svm' %data_name,'w', encoding='utf-8') as data_write:
 
-				file.write(' %d:%f' %(count,score))
+            with codecs.open(data,'r', encoding='utf-8') as data_read:
 
-				count += 1
+                for i, line in enumerate(data_read):
 
+                    wiki_id_query, qid, wiki_id_candidate, relevance, doc_id = self.parse_ceccarelli_line(line)
 
-	def feature_generator(self, data):
+                    print(wiki_id_query)
 
-		data_name = (data.split('/')[-1]).split('.')[0]
+                    uri_query = Sparql.get_uri_from_wiki_id(wiki_id_query)
 
-		with codecs.open('features/ceccarelli/%s.svm' %(data_name),'w', encoding='utf-8') as data_write:
+                    uri_candidate = Sparql.get_uri_from_wiki_id(wiki_id_candidate)
 
-			with codecs.open(data,'r', encoding='utf-8') as data_read:
+                    self.write_line(uri_query, qid, uri_candidate, relevance, data_write, doc_id)
 
-				for i, line in enumerate(data_read):
+        print('finished writing features')
 
-					wiki_id_query, qid, wiki_id_candidate, relevance, doc_id = self.parse_ceccarelli_line(line)
-
-					print(wiki_id_query)
-
-					uri_query = sparql.get_uri_from_wiki_id(wiki_id_query)
-
-					uri_candidate = sparql.get_uri_from_wiki_id(wiki_id_candidate)
-
-					self.write_line(uri_query, qid, uri_candidate, relevance, data_write, doc_id)
-
-		print('finished writing features')
-
-		print("--- %s seconds ---" % (time.time() - start_time))
-
-
-	def run(self,data):
-
-		e2r = self.entity2rel()
-
-		e2r.feature_generator(data)
-
-
-	def test(self):
-
-		uri1 = "http://dbpedia.org/resource/Pulp_Fiction"
-
-		uri2 = "http://dbpedia.org/resource/Jackie_Brown_(film)"
-
-		uri3 = "http://dbpedia.org/resource/Romeo_and_Juliet_(1996_movie)"
-
-		embedding1 = "emb/movielens_1m_no_overwrite/feedback/num500_p1_q4_l10_d500.emd"
-
-		embedding2 = "emb/movielens_1m_no_overwrite/dbo:director/num500_p1_q4_l10_d500.emd"
-
-		args = entity2rel.parse_args()
-
-		rel = entity2rel()
-
-		rel.add_embedding(embedding1)
-		rel.add_embedding(embedding2)
-
-		print('\n')
-		print("Relatedness between Pulp Fiction and Jackie Brown is:\n")
-		scores = rel.relatedness_scores(uri1, uri2)
-		for s in scores:
-			print(s)
-			print('\n')
-
-		print("Relatedness between Pulp Fiction and Romeo and Juliet is:\n")
-		scores = rel.relatedness_scores(uri1, uri3)
-
-		for s in scores:
-			print(s)
-			print('\n')
-
-
-	@staticmethod
-	def parse_args():
-
-		parser = argparse.ArgumentParser(description="Measure entity relatedness.")
-
-		parser.add_argument('--embedding', help='File with embeddings')
-
-		parser.add_argument('--binary', help='Whether the embeddings are stored in binary format')
-
-		parser.add_argument('--ground_truth', help = 'data from which features are generated')
-
+        print("--- %s seconds ---" % (time.time() - start_time))
 
 
 if __name__ == '__main__':
 
-	#test
+    # test
 
-	start_time = time.time()
+    start_time = time.time()
 
-	args = entity2rel.parse_args()
+    uri1 = "http://dbpedia.org/resource/Pulp_Fiction"
 
-	e2r = entity2rel(args.ground_truth)
+    uri2 = "http://dbpedia.org/resource/Jackie_Brown_(film)"
 
-	e2r.add_embedding(args.embedding)
+    uri3 = "http://dbpedia.org/resource/Romeo_and_Juliet_(1996_movie)"
 
-	e2r.run()
+    embedding1 = "emb/movielens_1m/feedback/num500_p1_q4_l10_d500_iter5_winsize10.emd"
 
-	print("--- %s seconds ---" % (time.time() - start_time))
+    embedding2 = "emb/movielens_1m/dbo:director/num500_p1_q4_l10_d500_iter5_winsize10.emd"
+
+    rel = Entity2Rel()
+
+    rel.add_embedding(embedding1)
+    rel.add_embedding(embedding2)
+
+    print('\n')
+    print("Relatedness between Pulp Fiction and Jackie Brown is:\n")
+    scores = rel.relatedness_scores(uri1, uri2)
+    for s in scores:
+        print(s)
+        print('\n')
+
+    print("Relatedness between Pulp Fiction and Romeo and Juliet is:\n")
+    scores = rel.relatedness_scores(uri1, uri3)
+
+    for s in scores:
+        print(s)
+        print('\n')
+
+    print("--- %s seconds ---" % (time.time() - start_time))

@@ -1,13 +1,10 @@
 from __future__ import print_function
-import optparse
 import os
 import codecs
 import collections
 import numpy as np
-from gensim.models import Word2Vec
-from pandas import read_json
-from entity2vec import entity2vec
-from entity2rel import entity2rel
+from entity2vec import Entity2Vec
+from entity2rel import Entity2Rel
 import argparse
 import time
 from random import shuffle
@@ -16,13 +13,14 @@ from random import shuffle
 ## Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph embeddings and user feedback ##
 ###############################################################################################################################################
 
-class entity2rec(entity2vec, entity2rel):
+
+class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file):
 
-        entity2vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file)
+        Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file)
 
-        entity2rel.__init__(self, True) #binary format embeddings
+        Entity2Rel.__init__(self, True)  # binary format embeddings
 
         self.training = training
 
@@ -30,10 +28,9 @@ class entity2rec(entity2vec, entity2rel):
 
         self.implicit = implicit
 
-        self._get_items_liked_by_user() #defines the dictionary of items liked by each user in the training set
+        self._get_items_liked_by_user() # defines the dictionary of items liked by each user in the training set
 
-        self._get_all_items() #define all the items that can be used as candidates for the recommandations
-
+        self._get_all_items() # define all the items that can be used as candidates for the recommandations
 
     def _get_embedding_files(self):
 
@@ -43,8 +40,8 @@ class entity2rec(entity2vec, entity2rel):
                 prop_short = prop.split('/')[-1]
 
             self.add_embedding(u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s_iter%d_winsize%d.emd' % (
-            self.dataset, prop_short, self.num_walks, int(self.p), int(self.q), self.walk_length, self.dimensions, self.iter,
-            self.window_size))
+                self.dataset, prop_short, self.num_walks, int(self.p), int(self.q), self.walk_length, self.dimensions, self.iter,
+                self.window_size))
 
     def _get_items_liked_by_user(self):
 
@@ -70,28 +67,27 @@ class entity2rec(entity2vec, entity2rel):
 
                 self.items_rated_by_user_train[u].append(item)
 
-                self.items_ratings_by_user_test[(u,item)] = relevance #independently from the rating
+                self.items_ratings_by_user_test[(u, item)] = relevance  # independently from the rating
 
-                if self.implicit == False and relevance >= 4: #only relevant items are used to compute the similarity, rel = 5 in a previous work
+                if self.implicit is False and relevance >= 4:  # only relevant items are used to compute the similarity, rel = 5 in a previous work
 
                     self.items_liked_by_user_dict[u].append(item)
 
-                elif self.implicit == True and relevance == 1:
+                elif self.implicit and relevance == 1:
 
                     self.items_liked_by_user_dict[u].append(item)
 
                 self.all_train_items.append(item)
 
-        self.all_train_items = list(set(self.all_train_items)) #remove duplicates
-
+        self.all_train_items = list(set(self.all_train_items))  # remove duplicates
 
     def _get_all_items(self):
 
         self.all_items = []
 
-        if self.entities != "all": #if it has been provided a list of items as an external file, read from it
+        if self.entities != "all":  # if it has been provided a list of items as an external file, read from it
 
-            del self.all_train_items #free memory space
+            del self.all_train_items  # free memory space
 
             with codecs.open(self.entities, 'r', encoding='utf-8') as items:
 
@@ -101,7 +97,7 @@ class entity2rec(entity2vec, entity2rel):
 
                     self.all_items.append(item)
 
-        else: #otherwise join the items from the train and test set
+        else:  # otherwise join the items from the train and test set
 
             with codecs.open(self.test,'r', encoding='utf-8') as test:
 
@@ -121,20 +117,19 @@ class entity2rec(entity2vec, entity2rel):
 
                     self.items_ratings_by_user_test[(u,item)] = relevance
 
-                self.all_items = list(set(self.all_train_items+test_items)) #merge lists and remove duplicates
+                self.all_items = list(set(self.all_train_items+test_items))  # merge lists and remove duplicates
 
                 del self.all_train_items
 
-
     def collab_similarity(self, user, item):
 
-        #all other properties
+        # feedback property
 
         return self.relatedness_score_by_position(user, item, -1)
 
     def content_similarities(self, user, item):
         
-        #all other properties
+        # all other properties
 
         items_liked_by_user = self.items_liked_by_user_dict[user]
 
@@ -142,38 +137,36 @@ class entity2rec(entity2vec, entity2rel):
         
         for past_item in items_liked_by_user:
 
-            sims.append(self.relatedness_scores(past_item,item, -1)) #append a list of property-specific scores, skip feedback
+            sims.append(self.relatedness_scores(past_item,item, -1))  # append a list of property-specific scores, skip feedback
         
         if len(sims) == 0:
             sims = 0.5*np.ones(len(self.properties) - 1)
             return sims
 
-        return np.mean(sims, axis = 0) #return a list of averages of property-specific scores
-
+        return np.mean(sims, axis = 0) # return a list of averages of property-specific scores
 
     @staticmethod
     def parse_user_id(user):
 
-        return int(user.strip('user')) #29
+        return int(user.strip('user'))  # 29
 
     def parse_users_items_rel(self,line):
 
             line = line.split(' ')
 
-            user = line[0] #user29
+            user = line[0]  # user29
 
-            user_id = entity2rec.parse_user_id(user) #29
+            user_id = Entity2Rec.parse_user_id(user)  # 29
 
-            item = line[1] #http://dbpedia.org/resource/The_Golden_Child
+            item = line[1]  # http://dbpedia.org/resource/The_Golden_Child
 
-            relevance = int(line[2]) #5
+            relevance = int(line[2])  # 5
 
-            #binarization of the relevance values
-            if self.implicit == False:
+            # binarization of the relevance values
+            if self.implicit is False:
                 relevance = 1 if relevance >= 4 else 0
 
-            return (user, user_id, item, relevance)
-
+            return user, user_id, item, relevance
 
     def write_line(self,user, user_id, item, relevance, file):
 
@@ -193,7 +186,7 @@ class entity2rec(entity2vec, entity2rel):
 
         for content_score in content_scores:
 
-            if count == l + 1: #last score, end of line
+            if count == l + 1:  # last score, end of line
 
                 file.write(' %d:%f # %s\n' %(count,content_score,item))
 
@@ -203,29 +196,26 @@ class entity2rec(entity2vec, entity2rel):
 
                 count += 1
 
+    def get_candidates(self, user):
 
+        # get candidates according to the all unrated items protocol
+        # use as candidates all the the items that are not in the training set
 
-    def get_candidates(self,user):
+        rated_items_train = self.items_rated_by_user_train[user]  # both in the train and in the test
 
-        #get candidates according to the all unrated items protocol
-        #use as candidates all the the items that are not in the training set
-
-        rated_items_train = self.items_rated_by_user_train[user] #both in the train and in the test
-
-        candidate_items = [item for item in self.all_items if item not in rated_items_train] #all unrated items in the train
+        candidate_items = [item for item in self.all_items if item not in rated_items_train]  # all unrated items in the train
 
         return candidate_items
 
-
     def feature_generator(self):
 
-        #write training set
+        # write training set
 
         start_time = time.time()
 
-        train_name = ((self.training).split('/')[-1]).split('.')[0]
+        train_name = (self.training.split('/')[-1]).split('.')[0]
 
-        feature_path = 'features/%s/p%d_q%d/' %(self.dataset,int(self.p), int(self.q))
+        feature_path = 'features/%s/p%d_q%d/' %(self.dataset, int(self.p), int(self.q))
 
         try:
             os.makedirs(feature_path)
@@ -250,9 +240,9 @@ class entity2rec(entity2vec, entity2rel):
 
         print("--- %s seconds ---" % (time.time() - start_time))
 
-        #write test set
+        # write test set
 
-        test_name = ((self.test).split('/')[-1]).split('.')[0]
+        test_name = (self.test.split('/')[-1]).split('.')[0]
 
         feature_file = feature_path + '%s_p%d_q%d.svm' %(test_name, int(self.p), int(self.q))
 
@@ -260,26 +250,26 @@ class entity2rec(entity2vec, entity2rel):
 
             for user in self.items_rated_by_user_train.keys():
 
-                #write some candidate items
+                # write some candidate items
 
                 print(user)
 
-                user_id = entity2rec.parse_user_id(user)
+                user_id = Entity2Rec.parse_user_id(user)
 
                 candidate_items = self.get_candidates(user)
 
-                shuffle(candidate_items) #relevant and non relevant items are shuffled
+                shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
                 for item in candidate_items:
 
                     try:
-                        rel = int(self.items_ratings_by_user_test[(user,item)]) #get the relevance score if it's in the test
+                        rel = int(self.items_ratings_by_user_test[(user,item)])  # get the relevance score if it's in the test
 
-                        if self.implicit == False:
+                        if self.implicit is False:
                             rel = 1 if rel >= 4 else 0
 
                     except KeyError:
-                        rel = 0 #unrated items are assumed to be negative
+                        rel = 0  # unrated items are assumed to be negative
 
                     self.write_line(user, user_id, item, rel, test_write)
 
@@ -287,25 +277,22 @@ class entity2rec(entity2vec, entity2rel):
 
         print("--- %s seconds ---" % (time.time() - start_time))
 
-
     def run(self, run_all):
 
         if run_all:
-            super(entity2rec, self).run()
+            super(Entity2Rec, self).run()
 
         self._get_embedding_files()
         self.feature_generator()
 
-
     @staticmethod
     def parse_args():
 
-        '''
+        """
         Parses the entity2vec arguments.
-        '''
+        """
 
         parser = argparse.ArgumentParser(description="Run entity2rec.")
-
 
         parser.add_argument('--walk_length', type=int, default=10,
                             help='Length of walk per source. Default is 10.')
@@ -357,7 +344,6 @@ class entity2rec(entity2vec, entity2rel):
         parser.add_argument('--entities', dest = 'entities', default = "all",
                             help='A specific list of entities for which the embeddings have to be computed')
 
-
         parser.add_argument('--default_graph', dest = 'default_graph', default = False,
                             help='Default graph to query when using a Sparql endpoint')
 
@@ -379,12 +365,11 @@ class entity2rec(entity2vec, entity2rel):
 
 if __name__ == '__main__':
 
-
     start_time = time.time()
 
-    args = entity2rec.parse_args()
+    args = Entity2Rec.parse_args()
 
-    rec = entity2rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class, args.feedback_file)
+    rec = Entity2Rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class, args.feedback_file)
 
     rec.run(args.run_all)
 
