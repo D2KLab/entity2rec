@@ -1,6 +1,6 @@
 # entity2rec
 
-Implementation of the entity recommendation algorithm described in [entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation](https://enricopal.github.io/enricopal.github.io/publications/Palumbo_Rizzo-RecSys2017.pdf). Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information and Linked Open Data information. It is based on property-specific entity embeddings, which are obtained via entity2vec (https://github.com/MultimediaSemantics/entity2vec). 
+Implementation of the entity recommendation algorithm described in [entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation](https://enricopal.github.io/enricopal.github.io/publications/Palumbo_Rizzo-RecSys2017.pdf). Compute user and item embeddings from a Knowledge Graph encompassing both user feedback information and item information. It is based on property-specific entity embeddings, which are obtained via entity2vec (https://github.com/MultimediaSemantics/entity2vec). 
 
 For a usage example, see the [Wiki](https://github.com/MultimediaSemantics/entity2rec/wiki) section.
 
