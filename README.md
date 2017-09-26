@@ -11,7 +11,7 @@ For a usage example, see the [Wiki](https://github.com/MultimediaSemantics/entit
 - Python 2.7 or above
 - numpy
 - gensim
-- networkx
+- networkx 1.x
 - pandas
 - SPARQL Wrapper
 
