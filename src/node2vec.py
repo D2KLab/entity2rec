@@ -172,7 +172,7 @@ class Node2Vec(object):
         Simulate random walks from each node.
         """
         G = self.G
-        nodes = G.nodes()
+        nodes = list(G.nodes())
 
         self._walks = []
 
