@@ -1,7 +1,6 @@
 {"movielens_1m": ["dbo:basedOn"], 
 	"dbpedia" : ["rdf:type", "altogether"],
-	"3cixty" : ["http://data.linkedevents.org/def/location#businessTypeTop","http://data.linkedevents.org/def/location#businessType"],
-	"LastFM" : ["dbo:associatedBand","dbo:hometown"]
+	"3cixty" : ["http://data.linkedevents.org/def/location#businessTypeTop","http://data.linkedevents.org/def/location#businessType"]
 
 }
 
