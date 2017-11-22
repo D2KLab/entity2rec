@@ -16,7 +16,8 @@ from random import shuffle
 
 class Entity2Rec(Entity2Vec, Entity2Rel):
 
-    def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file):
+    def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file,
+                 validation=None, all_unrated_items=False):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file)
 
@@ -24,13 +25,17 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.training = training
 
+        self.validation = validation
+
         self.test = test
 
         self.implicit = implicit
 
-        self._get_items_liked_by_user() # defines the dictionary of items liked by each user in the training set
+        self.all_unrated_items = all_unrated_items
 
-        self._get_all_items() # define all the items that can be used as candidates for the recommandations
+        self._get_items_liked_by_user()  # defines the dictionary of items liked by each user in the training set
+
+        self._get_all_items()  # define all the items that can be used as candidates for the recommandations
 
     def _get_embedding_files(self):
 
@@ -53,7 +58,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.items_rated_by_user_train = collections.defaultdict(list)
 
-        with codecs.open(self.training,'r', encoding='utf-8') as train:
+        with codecs.open(self.training, 'r', encoding='utf-8') as train:
 
             for line in train:
 
@@ -97,7 +102,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                     self.all_items.append(item)
 
-        else:  # otherwise join the items from the train and test set
+        else:  # otherwise join the items from the train, validation and test set
 
             with codecs.open(self.test,'r', encoding='utf-8') as test:
 
@@ -121,6 +126,30 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 del self.all_train_items
 
+            if self.validation:
+
+                self.items_ratings_by_user_val = {}
+
+                with codecs.open(self.validation,'r', encoding='utf-8') as val:
+
+                    val_items = []
+
+                    for line in val:
+
+                        line = line.split(' ')
+
+                        u = line[0]
+
+                        item = line[1]
+
+                        relevance = int(line[2])
+
+                        val_items.append(item)
+
+                        self.items_ratings_by_user_val[(u, item)] = relevance
+
+                    self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
+
     def collab_similarity(self, user, item):
 
         # feedback property
@@ -143,7 +172,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             sims = 0.5*np.ones(len(self.properties) - 1)
             return sims
 
-        return np.mean(sims, axis = 0) # return a list of averages of property-specific scores
+        return np.mean(sims, axis=0)  # return a list of averages of property-specific scores
 
     def parse_users_items_rel(self,line):
 
@@ -196,9 +225,14 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         # get candidates according to the all unrated items protocol
         # use as candidates all the the items that are not in the training set
 
-        rated_items_train = self.items_rated_by_user_train[user]  # both in the train and in the test
+        if self.all_unrated_items:
+            rated_items_train = self.items_rated_by_user_train[user]  # both in the train and in the test
 
-        candidate_items = [item for item in self.all_items if item not in rated_items_train]  # all unrated items in the train
+            candidate_items = [item for item in self.all_items if item not in rated_items_train]  # all unrated items in the train
+
+        else:
+
+            candidate_items = self.all_items
 
         return candidate_items
 
@@ -272,6 +306,44 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         print("--- %s seconds ---" % (time.time() - start_time))
 
+        if self.validation:  # write validation set
+
+            val_name = (self.validation.split('/')[-1]).split('.')[0]
+
+            feature_file = feature_path + '%s_p%d_q%d.svm' % (val_name, int(self.p), int(self.q))
+
+            with codecs.open(feature_file, 'w', encoding='utf-8') as val_write:
+
+                for user in self.items_rated_by_user_train.keys():
+
+                    # write some candidate items
+
+                    print(user)
+
+                    user_id = int(user.strip('user'))
+
+                    candidate_items = self.get_candidates(user)
+
+                    shuffle(candidate_items)  # relevant and non relevant items are shuffled
+
+                    for item in candidate_items:
+
+                        try:
+                            rel = int(self.items_ratings_by_user_test[
+                                          (user, item)])  # get the relevance score if it's in the test
+
+                            if self.implicit is False:
+                                rel = 1 if rel >= 4 else 0
+
+                        except KeyError:
+                            rel = 0  # unrated items are assumed to be negative
+
+                        self.write_line(user, user_id, item, rel, val_write)
+
+            print('finished writing validation')
+
+            print("--- %s seconds ---" % (time.time() - start_time))
+
     def run(self, run_all):
 
         if run_all:
@@ -310,7 +382,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                             help='Graph is (un)directed. Default is directed.')
         parser.set_defaults(directed=False)
 
-        parser.add_argument('--no_preprocessing', dest = 'preprocessing', action='store_false',
+        parser.add_argument('--no_preprocessing', dest='preprocessing', action='store_false',
                             help='Whether preprocess all transition probabilities or compute on the fly')
         parser.set_defaults(preprocessing=True)
 
@@ -346,14 +418,19 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         parser.add_argument('--test', dest='test', help='test')
 
+        parser.add_argument('--validation', dest='validation', default=False, help='validation')
+
         parser.add_argument('--run_all', dest='run_all', action='store_true', default = False, help='If computing also the embeddings')
 
-        parser.add_argument('--implicit', dest='implicit', default = False, help='Implicit feedback with boolean values')
+        parser.add_argument('--implicit', dest='implicit', action='store_true', default = False, help='Implicit feedback with boolean values')
 
-        parser.add_argument('--entity_class', dest = 'entity_class', help = 'entity class', default = False)
+        parser.add_argument('--entity_class', dest='entity_class', help='entity class', default = False)
 
-        parser.add_argument('--feedback_file', dest = 'feedback_file', default = False,
+        parser.add_argument('--feedback_file', dest='feedback_file', default=False,
                             help='Path to a DAT file that contains all the couples user-item')
+
+        parser.add_argument('--all_unrated_items', dest='all_unrated_items', action='store_true', default=False,
+                            help='Whether removing the rated items of the training set from the candidates')
 
         return parser.parse_args()
 
@@ -364,7 +441,10 @@ if __name__ == '__main__':
 
     args = Entity2Rec.parse_args()
 
-    rec = Entity2Rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks, args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset, args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class, args.feedback_file)
+    rec = Entity2Rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks,
+                     args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset,
+                     args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class, args.feedback_file,
+                     validation=args.validation, all_unrated_items=args.all_unrated_items)
 
     rec.run(args.run_all)
 
