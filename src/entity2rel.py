@@ -4,14 +4,14 @@ from sparql import Sparql
 import codecs
 import time
 
-################################################################################################################################
-## Computes a set of relatedness scores between a pair of entities from a set of property-specific Knowledge Graph embeddings ##
-################################################################################################################################
-
 
 class Entity2Rel(object):
 
-    def __init__(self, binary = True):
+    """
+    Computes a set of relatedness scores between a pair of entities from a set of property-specific Knowledge Graph embeddings
+    """
+
+    def __init__(self, binary=True):
 
         self.binary = binary
         self.embedding_files = []
@@ -22,11 +22,11 @@ class Entity2Rel(object):
         self.embedding_files.append(KeyedVectors.load_word2vec_format(embedding_file, binary=self.binary))
 
     # access a particular embedding file and get the relatedness score
-    def relatedness_score_by_position(self,uri1,uri2,pos):
+    def relatedness_score_by_position(self, uri1, uri2, pos):
 
         try:
 
-            score = self.embedding_files[pos].similarity(uri1,uri2)
+            score = self.embedding_files[pos].similarity(uri1, uri2)
 
         except KeyError:
 
@@ -42,7 +42,7 @@ class Entity2Rel(object):
         if skip:
             ind = skip
         else:
-            ind = len(self.embedding_files) #unless provided with a skip index, take them all
+            ind = len(self.embedding_files)  # unless provided with a skip index, take them all
 
         if uri1 is None or uri2 is None:
 

@@ -8,30 +8,43 @@ from entity2rel import Entity2Rel
 import argparse
 import time
 from random import shuffle
-
-###############################################################################################################################################
-## Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph embeddings and user feedback ##
-###############################################################################################################################################
+import pyltr
 
 
 class Entity2Rec(Entity2Vec, Entity2Rel):
 
-    def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, training, test, implicit, entity_class, feedback_file,
-                 validation=None, all_unrated_items=False):
+    """Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph
+    embeddings and user feedback and feeds them into a learning to rank algorithm"""
+
+    def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph,implicit, entity_class, feedback_file, all_unrated_items=False):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size, workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file)
 
-        Entity2Rel.__init__(self, True)  # binary format embeddings
+        Entity2Rel.__init__(self)  # binary format embeddings
+
+        self.implicit = implicit
+
+        self.all_unrated_items = all_unrated_items
+
+        # initializing object variables that will be assigned later
+
+        self.training = None
+
+        self.validation = None
+
+        self.test = None
+
+        self.model = None
+
+        self.metric = None
+
+    def parse_data(self, training, test, validation=None):
 
         self.training = training
 
         self.validation = validation
 
         self.test = test
-
-        self.implicit = implicit
-
-        self.all_unrated_items = all_unrated_items
 
         self._get_items_liked_by_user()  # defines the dictionary of items liked by each user in the training set
 
@@ -130,7 +143,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 self.items_ratings_by_user_val = {}
 
-                with codecs.open(self.validation,'r', encoding='utf-8') as val:
+                with codecs.open(self.validation, 'r', encoding='utf-8') as val:
 
                     val_items = []
 
@@ -174,7 +187,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return np.mean(sims, axis=0)  # return a list of averages of property-specific scores
 
-    def parse_users_items_rel(self,line):
+    def parse_users_items_rel(self, line):
 
             line = line.split(' ')
 
@@ -187,24 +200,32 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             relevance = int(line[2])  # 5
 
             # binarization of the relevance values
+
             if self.implicit is False:
+
                 relevance = 1 if relevance >= 4 else 0
 
             return user, user_id, item, relevance
 
-    def write_line(self,user, user_id, item, relevance, file):
+    def compute_scores(self, user, item):
+
+        collab_score = self.collab_similarity(user, item)
+
+        content_scores = self.content_similarities(user, item)
+
+        return collab_score, content_scores
+
+    def write_line(self, user, user_id, item, relevance, file):
 
         file.write('%d qid:%d' %(relevance,user_id))
 
         count = 1
 
-        collab_score = self.collab_similarity(user, item)
+        collab_score, content_scores = self.compute_scores(user, item)
 
         file.write(' %d:%f' %(count,collab_score))
 
         count += 1
-
-        content_scores = self.content_similarities(user, item)
 
         l = len(content_scores)
 
@@ -222,7 +243,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def get_candidates(self, user):
 
-        # get candidates according to the all unrated items protocol
+        # get candidates according to the all items protocol
         # use as candidates all the the items that are not in the training set
 
         if self.all_unrated_items:
@@ -236,7 +257,12 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return candidate_items
 
-    def feature_generator(self):
+    def feature_generator(self, run_all=False):
+
+        if run_all:
+            super(Entity2Rec, self).run() # run entity2vec
+
+        self._get_embedding_files()
 
         # write training set
 
@@ -344,19 +370,113 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             print("--- %s seconds ---" % (time.time() - start_time))
 
-    def run(self, run_all):
+    def _compute_features(self, data):
+
+        TX = []
+        Ty = []
+        Tqids = []
+
+        with codecs.open(data, 'r', encoding='utf-8') as data_file:
+
+            for line in data_file:
+
+                user, user_id, item, relevance = self.parse_users_items_rel(line)
+
+                Tqids.append(user_id)
+
+                collab_score, content_scores = self.compute_scores(user, item)
+
+                features = [collab_score] + list(content_scores)
+
+                print(features)
+
+                TX.append(features)
+
+                Ty.append(relevance)
+
+        return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
+
+    def features(self, run_all=False):
 
         if run_all:
-            super(Entity2Rec, self).run() # run entity2vec
+            print('Running entity2vec to generate property-specific embeddings...')
+            super(Entity2Rec, self).run()  # run entity2vec
+
+        # reads the embedding files
 
         self._get_embedding_files()
-        self.feature_generator()
+
+        # reads .dat format and computes features into numpy arrays
+        x_train, y_train, qids_train = self._compute_features(self.training)
+
+        x_test, y_test, qids_test = self._compute_features(self.test)
+
+        if self.validation:
+
+            x_val, y_val, qids_val = self._compute_features(self.validation)
+
+        else:
+
+            x_val, y_val, qids_val = None, None, None
+
+        return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
+
+    def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None, eval='AP', N=10):
+
+        if eval == 'NDCG':
+
+            self.metric = pyltr.metrics.NDCG(k=N)
+
+        elif eval == 'AP':
+
+            self.metric = pyltr.metrics.AP(k=N)
+
+        else:
+
+            raise ValueError('Metric not implemented')
+
+        self.model = pyltr.models.LambdaMART(
+            metric=self.metric,
+            n_estimators=1000,
+            learning_rate=0.02,
+            max_features=0.5,
+            query_subsample=0.5,
+            max_leaf_nodes=10,
+            min_samples_leaf=64,
+            verbose=1,
+        )
+
+        # Only needed if you want to perform validation (early stopping & trimming)
+
+        if self.validation:
+
+            monitor = pyltr.models.monitors.ValidationMonitor(
+                x_val, y_val, qids_val, metric=self.metric, stop_after=250)
+
+            self.model.fit(x_train, y_train, qids_train, monitor=monitor)
+
+        else:
+
+            self.model.fit(x_train, y_train, qids_train)
+
+    def evaluate(self, x_test, y_test, qids_test):
+
+        if self.model and self.metric:
+
+            preds = self.model.predict(x_test)
+
+            print('Random ranking:', self.metric.calc_mean_random(qids_test, y_test))
+            print('Our model:', self.metric.calc_mean(qids_test, y_test, preds))
+
+        else:
+
+            raise ValueError('Fit the model before you evaluate')
 
     @staticmethod
     def parse_args():
 
         """
-        Parses the entity2vec arguments.
+        Parses the entity2rec arguments.
         """
 
         parser = argparse.ArgumentParser(description="Run entity2rec.")
@@ -393,7 +513,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                             help='Context size for optimization. Default is 10.')
 
         parser.add_argument('--iter', default=5, type=int,
-                          help='Number of epochs in SGD')
+                            help='Number of epochs in SGD')
 
         parser.add_argument('--workers', type=int, default=8,
                             help='Number of parallel workers. Default is 8.')
@@ -408,29 +528,38 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                             help='Whether downloading the graphs from a sparql endpoint')
         parser.set_defaults(sparql=False)
 
-        parser.add_argument('--entities', dest = 'entities', default = "all",
+        parser.add_argument('--entities', dest='entities', default = "all",
                             help='A specific list of entities for which the embeddings have to be computed')
 
-        parser.add_argument('--default_graph', dest = 'default_graph', default = False,
+        parser.add_argument('--default_graph', dest = 'default_graph', default=False,
                             help='Default graph to query when using a Sparql endpoint')
 
-        parser.add_argument('--train', dest='train', help='train', default = False)
+        parser.add_argument('--train', dest='train', help='train', default=False)
 
         parser.add_argument('--test', dest='test', help='test')
 
         parser.add_argument('--validation', dest='validation', default=False, help='validation')
 
-        parser.add_argument('--run_all', dest='run_all', action='store_true', default = False, help='If computing also the embeddings')
+        parser.add_argument('--run_all', dest='run_all', action='store_true', default=False, help='If computing also the embeddings')
 
-        parser.add_argument('--implicit', dest='implicit', action='store_true', default = False, help='Implicit feedback with boolean values')
+        parser.add_argument('--implicit', dest='implicit', action='store_true', default=False, help='Implicit feedback with boolean values')
 
-        parser.add_argument('--entity_class', dest='entity_class', help='entity class', default = False)
+        parser.add_argument('--entity_class', dest='entity_class', help='entity class', default=False)
 
         parser.add_argument('--feedback_file', dest='feedback_file', default=False,
                             help='Path to a DAT file that contains all the couples user-item')
 
         parser.add_argument('--all_unrated_items', dest='all_unrated_items', action='store_true', default=False,
                             help='Whether removing the rated items of the training set from the candidates')
+
+        parser.add_argument('--write_features', dest='write_features', action='store_true', default=False,
+                            help='Writes the features to file')
+
+        parser.add_argument('--metric', dest='metric', default='AP',
+                            help='Metrics to be used in the evaluation')
+
+        parser.add_argument('--N', dest='N', type=int, default=10,
+                            help='Cutoff to estimate metric')
 
         return parser.parse_args()
 
@@ -439,13 +568,33 @@ if __name__ == '__main__':
 
     start_time = time.time()
 
+    print('Starting entity2rec...')
+
     args = Entity2Rec.parse_args()
 
     rec = Entity2Rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks,
                      args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset,
-                     args.entities, args.default_graph, args.train, args.test, args.implicit, args.entity_class, args.feedback_file,
-                     validation=args.validation, all_unrated_items=args.all_unrated_items)
+                     args.entities, args.default_graph, args.implicit, args.entity_class, args.feedback_file,
+                     all_unrated_items=args.all_unrated_items)
 
-    rec.run(args.run_all)
+    rec.parse_data(args.train, args.test, validation=args.validation)  # generate the list of candidate items
+
+    if args.write_features:
+
+        rec.feature_generator()  # writes features to file with SVM format
+
+    else:
+
+        x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.features()
+
+        print('Finished computing features after %s seconds' % (time.time() - start_time))
+        print('Starting to fit the model...')
+
+        rec.fit(x_train, y_train, qids_train,
+                x_val=x_val, y_val=y_val, qids_val=qids_val, eval=args.metric, N=args.N)  # train the model
+
+        print('Finished fitting the model after %s seconds' % (time.time() - start_time))
+
+        rec.evaluate(x_test, y_test, qids_test)  # evaluates the model on the test set
 
     print("--- %s seconds ---" % (time.time() - start_time))
