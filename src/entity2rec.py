@@ -370,29 +370,66 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             print("--- %s seconds ---" % (time.time() - start_time))
 
-    def _compute_features(self, data):
+    def _compute_features(self, data, test=False):
 
         TX = []
         Ty = []
         Tqids = []
 
-        with codecs.open(data, 'r', encoding='utf-8') as data_file:
+        if self.implicit:
+            test = False
 
-            for line in data_file:
+        if test:  # generate the features also for negative candidates
 
-                user, user_id, item, relevance = self.parse_users_items_rel(line)
+            for user in self.items_rated_by_user_train.keys():
 
-                Tqids.append(user_id)
+                print(user)
 
-                collab_score, content_scores = self.compute_scores(user, item)
+                user_id = int(user.strip('user'))
 
-                features = [collab_score] + list(content_scores)
+                candidate_items = self.get_candidates(user)
 
-                print(features)
+                shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
-                TX.append(features)
+                for item in candidate_items:
 
-                Ty.append(relevance)
+                    try:
+                        relevance = int(self.items_ratings_by_user_test[
+                                      (user, item)])  # get the relevance score if it's in the test
+
+                        if self.implicit is False:
+                            relevance = 1 if relevance >= 4 else 0
+
+                    except KeyError:
+                        relevance = 0  # unrated items are assumed to be negative
+
+                    Tqids.append(user_id)
+
+                    collab_score, content_scores = self.compute_scores(user, item)
+
+                    features = [collab_score] + list(content_scores)
+
+                    TX.append(features)
+
+                    Ty.append(relevance)
+
+        else:
+
+            with codecs.open(data, 'r', encoding='utf-8') as data_file:
+
+                for line in data_file:
+
+                    user, user_id, item, relevance = self.parse_users_items_rel(line)
+
+                    Tqids.append(user_id)
+
+                    collab_score, content_scores = self.compute_scores(user, item)
+
+                    features = [collab_score] + list(content_scores)
+
+                    TX.append(features)
+
+                    Ty.append(relevance)
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
 
@@ -409,11 +446,11 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         # reads .dat format and computes features into numpy arrays
         x_train, y_train, qids_train = self._compute_features(self.training)
 
-        x_test, y_test, qids_test = self._compute_features(self.test)
+        x_test, y_test, qids_test = self._compute_features(self.test, test=True)
 
         if self.validation:
 
-            x_val, y_val, qids_val = self._compute_features(self.validation)
+            x_val, y_val, qids_val = self._compute_features(self.validation, test=True)
 
         else:
 
