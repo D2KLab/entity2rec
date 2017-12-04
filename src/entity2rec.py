@@ -9,6 +9,7 @@ import argparse
 import time
 from random import shuffle
 import pyltr
+from metrics import precision_at_n, mrr, recall_at_n
 
 
 class Entity2Rec(Entity2Vec, Entity2Rel):
@@ -36,9 +37,16 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.model = None
 
-        self.metric = None
+        self.metrics = None
 
-    def parse_data(self, training, test, validation=None):
+    def _parse_data(self, training, test, validation=None):
+
+        """
+        Reads the data, generates the set of all items and defines the metrics
+        :param training: training set
+        :param test: test set
+        :param validation: validation set (optional)
+        """
 
         self.training = training
 
@@ -50,7 +58,13 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self._get_all_items()  # define all the items that can be used as candidates for the recommandations
 
+        self._define_metrics()
+
     def _get_embedding_files(self):
+
+        """
+        Sets the list of embedding files
+        """
 
         for prop in self.properties:
             prop_short = prop
@@ -162,6 +176,20 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                         self.items_ratings_by_user_val[(u, item)] = relevance
 
                     self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
+
+    def _define_metrics(self):
+
+        M = len(self.all_items)
+
+        self.metrics = {
+                       'P@5': precision_at_n.PrecisionAtN(k=5),  # P@5
+                       'P@10': precision_at_n.PrecisionAtN(k=10),  # P@10
+                       'MAP': pyltr.metrics.AP(k=M),  # MAP
+                       'R@5': recall_at_n.RecallAtN(k=5),
+                       'R@10': recall_at_n.RecallAtN(k=10),
+                       'NDCG': pyltr.metrics.NDCG(k=M, gain_type='identity'),  # NDCG
+                       'MRR': mrr.MRR(k=M)  # MRR
+                        }
 
     def collab_similarity(self, user, item):
 
@@ -433,24 +461,26 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
 
-    def features(self, run_all=False):
+    def features(self, training, test, validation=None, run_all=False):
 
         if run_all:
             print('Running entity2vec to generate property-specific embeddings...')
             super(Entity2Rec, self).run()  # run entity2vec
 
         # reads the embedding files
-
         self._get_embedding_files()
 
-        # reads .dat format and computes features into numpy arrays
-        x_train, y_train, qids_train = self._compute_features(self.training)
+        # reads .dat format
+        self._parse_data(training, test, validation=validation)
 
-        x_test, y_test, qids_test = self._compute_features(self.test, test=True)
+        # computes features into numpy arrays
+        x_train, y_train, qids_train = self._compute_features(training)
+
+        x_test, y_test, qids_test = self._compute_features(test, test=True)
 
         if self.validation:
 
-            x_val, y_val, qids_val = self._compute_features(self.validation, test=True)
+            x_val, y_val, qids_val = self._compute_features(validation, test=True)
 
         else:
 
@@ -458,22 +488,32 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
 
-    def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None, eval='AP', N=10):
+    def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None, optimize='AP', N=10):
 
-        if eval == 'NDCG':
+        # choose the metric to optimize during the fit process
 
-            self.metric = pyltr.metrics.NDCG(k=N)
+        if optimize == 'NDCG':
 
-        elif eval == 'AP':
+            self.metrics['fit'] = pyltr.metrics.NDCG(k=N)
 
-            self.metric = pyltr.metrics.AP(k=N)
+        elif optimize == 'P':
+
+            self.metrics['fit'] = precision_at_n.PrecisionAtN(k=N)
+
+        elif optimize == 'MRR':
+
+            self.metrics['fit'] = mrr.MRR(k=N)
+
+        elif optimize == 'AP':
+
+            self.metrics['fit'] = pyltr.metrics.AP(k=N)
 
         else:
 
             raise ValueError('Metric not implemented')
 
         self.model = pyltr.models.LambdaMART(
-            metric=self.metric,
+            metric=self.metrics['fit'],
             n_estimators=1000,
             learning_rate=0.02,
             max_features=0.5,
@@ -488,7 +528,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         if self.validation:
 
             monitor = pyltr.models.monitors.ValidationMonitor(
-                x_val, y_val, qids_val, metric=self.metric, stop_after=250)
+                x_val, y_val, qids_val, metric=self.metrics['fit'], stop_after=250)
 
             self.model.fit(x_train, y_train, qids_train, monitor=monitor)
 
@@ -498,12 +538,16 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def evaluate(self, x_test, y_test, qids_test):
 
-        if self.model and self.metric:
+        if self.model and self.metrics:
 
             preds = self.model.predict(x_test)
 
-            print('Random ranking:', self.metric.calc_mean_random(qids_test, y_test))
-            print('Our model:', self.metric.calc_mean(qids_test, y_test, preds))
+            for name, metric in self.metrics.items():
+
+                #print('Random ranking:', self.metric.calc_mean_random(qids_test, y_test))
+                if name != 'fit':
+
+                    print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds)))
 
         else:
 
@@ -593,7 +637,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                             help='Writes the features to file')
 
         parser.add_argument('--metric', dest='metric', default='AP',
-                            help='Metrics to be used in the evaluation')
+                            help='Metric to optimize in the training')
 
         parser.add_argument('--N', dest='N', type=int, default=10,
                             help='Cutoff to estimate metric')
@@ -614,21 +658,19 @@ if __name__ == '__main__':
                      args.entities, args.default_graph, args.implicit, args.entity_class, args.feedback_file,
                      all_unrated_items=args.all_unrated_items)
 
-    rec.parse_data(args.train, args.test, validation=args.validation)  # generate the list of candidate items
-
     if args.write_features:
 
         rec.feature_generator()  # writes features to file with SVM format
 
     else:
 
-        x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.features()
+        x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.features(args.train, args.test, validation=args.validation)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
         print('Starting to fit the model...')
 
         rec.fit(x_train, y_train, qids_train,
-                x_val=x_val, y_val=y_val, qids_val=qids_val, eval=args.metric, N=args.N)  # train the model
+                x_val=x_val, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N)  # train the model
 
         print('Finished fitting the model after %s seconds' % (time.time() - start_time))
 
