@@ -86,6 +86,9 @@ def parse_args():
     parser.add_argument('--write_features', dest='write_features', action='store_true', default=False,
                         help='Writes the features to file')
 
+    parser.add_argument('--read_features', dest='read_features', action='store_true', default=False,
+                        help='Reads the features from a file')
+
     parser.add_argument('--metric', dest='metric', default='AP',
                         help='Metric to optimize in the training')
 
@@ -112,10 +115,15 @@ if args.write_features:
 
 else:
 
-    x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.features(args.train, args.test, validation=args.validation)
+    if args.read_features:  # reads features from SVM format
 
-    print('Finished computing features after %s seconds' % (time.time() - start_time))
-    print('Starting to fit the model...')
+        x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.read_features()
+
+    else:
+        x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.features(args.train, args.test, validation=args.validation)
+
+        print('Finished computing features after %s seconds' % (time.time() - start_time))
+        print('Starting to fit the model...')
 
     rec.fit(x_train, y_train, qids_train,
             x_val=x_val, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N)  # train the model

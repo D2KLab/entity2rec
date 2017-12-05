@@ -400,6 +400,35 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             print("--- %s seconds ---" % (time.time() - start_time))
 
+    def read_features(self):
+
+        """
+        Reads features from .SVM files
+        """
+
+        with open('features/%s/p%s_q%s/train_p%s_q%s.svm' % (self.dataset, int(self.p), int(self.q), int(self.p),
+                                                             int(self.q))) as trainfile:
+
+            x_train, y_train, qids_train, _ = pyltr.data.letor.read_dataset(trainfile)
+
+        with open('features/%s/p%s_q%s/test_p%s_q%s.svm' % (self.dataset,int(self.p), int(self.q), int(self.p),
+                                                            int(self.q))) as testfile:
+
+            x_test, y_test, qids_test, _ = pyltr.data.letor.read_dataset(testfile)
+
+        if self.validation:
+
+            with open('features/%s/p%s_q%s/val_p%s_q%s.svm' % (self.dataset, int(self.p), int(self.q), int(self.p),
+                                                               int(self.q))) as valfile:
+
+                x_val, y_val, qids_val, _ = pyltr.data.letor.read_dataset(valfile)
+
+        else:
+
+            x_val, y_val, qids_val = None, None, None
+
+        return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
+
     def _compute_features(self, data, test=False):
 
         TX = []
