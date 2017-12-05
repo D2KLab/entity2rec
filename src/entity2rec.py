@@ -9,7 +9,10 @@ import argparse
 import time
 from random import shuffle
 import pyltr
+import sys
+sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
+from joblib import Parallel, delayed
 
 
 class Entity2Rec(Entity2Vec, Entity2Rel):
@@ -441,7 +444,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                     Ty.append(relevance)
 
-        else:
+        else:  # only generate features for data in the training set
 
             with codecs.open(data, 'r', encoding='utf-8') as data_file:
 
@@ -473,16 +476,27 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         # reads .dat format
         self._parse_data(training, test, validation=validation)
 
-        # computes features into numpy arrays
-        x_train, y_train, qids_train = self._compute_features(training)
-
-        x_test, y_test, qids_test = self._compute_features(test, test=True)
-
         if self.validation:
 
-            x_val, y_val, qids_val = self._compute_features(validation, test=True)
+            feat = Parallel(n_jobs=3)(delayed(self._compute_features)
+                                      (data, test=is_test)
+                                      for data, is_test in [(training, False), (test, True), (validation, True)])
+
+            x_train, y_train, qids_train = feat[0]
+
+            x_test, y_test, qids_test = feat[1]
+
+            x_val, y_val, qids_val = feat[2]
 
         else:
+
+            feat = Parallel(n_jobs=2)(delayed(self._compute_features)
+                                      (data, test=is_test)
+                                      for data, is_test in [(training, False), (test, True)])
+
+            x_train, y_train, qids_train = feat[0]
+
+            x_test, y_test, qids_test = feat[1]
 
             x_val, y_val, qids_val = None, None, None
 
@@ -520,7 +534,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             query_subsample=0.5,
             max_leaf_nodes=10,
             min_samples_leaf=64,
-            verbose=1,
+            verbose=1
         )
 
         # Only needed if you want to perform validation (early stopping & trimming)
@@ -544,7 +558,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             for name, metric in self.metrics.items():
 
-                #print('Random ranking:', self.metric.calc_mean_random(qids_test, y_test))
                 if name != 'fit':
 
                     print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds)))
