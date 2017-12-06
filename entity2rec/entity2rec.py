@@ -15,6 +15,7 @@ from joblib import Parallel, delayed
 
 
 class Entity2Rec(Entity2Vec, Entity2Rel):
+
     """Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph
     embeddings and user feedback and feeds them into a learning to rank algorithm"""
 
@@ -435,8 +436,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         Ty = []
         Tqids = []
 
-        if self.implicit:
-            test = False
+        if self.implicit:  # only positive feedback is available, need to generate false candidataes
+            test = True
 
         if test:  # generate the features also for negative candidates
 
@@ -477,6 +478,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             with codecs.open(data, 'r', encoding='utf-8') as data_file:
 
                 for line in data_file:
+
                     user, user_id, item, relevance = self.parse_users_items_rel(line)
 
                     Tqids.append(user_id)

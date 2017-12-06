@@ -1,0 +1,47 @@
+
+====================
+hetrec2011-lastfm-2k
+====================
+
+-------
+Version
+-------
+
+Version 1.0 (May 2011)
+
+-----------
+Description
+-----------
+
+    This dataset contains social networking, tagging, and music artist listening information 
+    from a set of 2K users from Last.fm online music system.
+    http://www.last.fm 
+
+    The dataset is released in the framework of the 2nd International Workshop on 
+    Information Heterogeneity and Fusion in Recommender Systems (HetRec 2011) 
+    http://ir.ii.uam.es/hetrec2011 
+    at the 5th ACM Conference on Recommender Systems (RecSys 2011)
+    http://recsys.acm.org/2011 
+
+---------------
+Data statistics
+---------------
+
+    1892 users
+   17632 artists
+      
+   12717 bi-directional user friend relations, i.e. 25434 (user_i, user_j) pairs
+         avg. 13.443 friend relations per user
+         
+   92834 user-listened artist relations, i.e. tuples [user, artist, listeningCount]
+         avg. 49.067 artists most listened by each user
+         avg. 5.265 users who listened each artist
+            
+   11946 tags  
+   
+  186479 tag assignments (tas), i.e. tuples [user, tag, artist]
+         avg. 98.562 tas per user
+         avg. 14.891 tas per artist
+         avg. 18.930 distinct tags used by each user
+         avg. 8.764 distinct tags used for each artist
+
