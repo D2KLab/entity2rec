@@ -440,7 +440,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                                 (user, item)])  # get the relevance score if it's in the test
 
             if self.implicit is False:
-                relevance = 1 if relevance >= 4 else 0
+                relevance = 1 if relevance >= threshold else 0
 
         except KeyError:
             relevance = 0  # unrated items are assumed to be negative
@@ -518,10 +518,13 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         if self.validation:
 
+            print('Features for train')
             x_train, y_train, qids_train = self._compute_features(training, threshold=threshold)
 
+            print('Features for test')
             x_test, y_test, qids_test = self._compute_features(test, test=True, threshold=threshold)
 
+            print('Features for val')
             x_val, y_val, qids_val = self._compute_features(validation, test=True, threshold=threshold)
 
         else:
