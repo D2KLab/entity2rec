@@ -73,6 +73,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         Sets the list of embedding files
         """
 
+        print(self.properties)
+
         for prop in self.properties:
             prop_short = prop
             if '/' in prop:
@@ -475,8 +477,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                                       for item in candidate_items)
 
                 for features, relevance in user_item_features:
-
-                    print(features, relevance)
 
                     TX.append(features)
 
