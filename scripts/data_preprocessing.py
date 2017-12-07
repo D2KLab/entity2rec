@@ -19,7 +19,7 @@ def get_real_length(l):
     return len(list(set(l)))
 
 
-dataset = 'LibraryThing'
+dataset = 'LastFM'
 
 # different datasets use different separators
 
