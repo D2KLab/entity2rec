@@ -20,8 +20,9 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
     embeddings and user feedback and feeds them into a learning to rank algorithm"""
 
     def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size,
-                 workers, iterations, config, sparql, dataset, entities, default_graph, implicit, entity_class,
-                 feedback_file, all_unrated_items=False):
+                 workers, iterations, config, dataset, sparql=False, entities=False, default_graph=False,
+                 implicit=False, entity_class=False,
+                 feedback_file=False, all_unrated_items=False):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
                             window_size, workers, iterations, config, sparql, dataset, entities, default_graph,
@@ -289,7 +290,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return candidate_items
 
-    def feature_generator(self, run_all=False):
+    def feature_generator(self, run_all=False, threshold=4):
 
         if run_all:
             super(Entity2Rec, self).run()  # run entity2vec
@@ -352,7 +353,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                                       (user, item)])  # get the relevance score if it's in the test
 
                         if self.implicit is False:
-                            rel = 1 if rel >= 4 else 0
+                            rel = 1 if rel >= threshold else 0
 
                     except KeyError:
                         rel = 0  # unrated items are assumed to be negative
@@ -390,7 +391,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                                           (user, item)])  # get the relevance score if it's in the test
 
                             if self.implicit is False:
-                                rel = 1 if rel >= 4 else 0
+                                rel = 1 if rel >= threshold else 0
 
                         except KeyError:
                             rel = 0  # unrated items are assumed to be negative
@@ -430,7 +431,25 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
 
-    def _compute_features(self, data, test=False):
+    def _compute_user_item_features(self, user, item, threshold=4):
+
+        try:
+            relevance = int(self.items_ratings_by_user_test[
+                                (user, item)])  # get the relevance score if it's in the test
+
+            if self.implicit is False:
+                relevance = 1 if relevance >= 4 else 0
+
+        except KeyError:
+            relevance = 0  # unrated items are assumed to be negative
+
+        collab_score, content_scores = self.compute_scores(user, item)
+
+        features = [collab_score] + list(content_scores)
+
+        return features, relevance
+
+    def _compute_features(self, data, test=False, threshold=4):
 
         TX = []
         Ty = []
@@ -451,21 +470,13 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
-                for item in candidate_items:
+                user_item_features = Parallel(n_jobs=-1)(delayed(self._compute_user_item_features)
+                                      (user, item, threshold=threshold)
+                                      for item in candidate_items)
 
-                    try:
-                        relevance = int(self.items_ratings_by_user_test[
-                                            (user, item)])  # get the relevance score if it's in the test
+                for features, relevance in user_item_features:
 
-                        if self.implicit is False:
-                            relevance = 1 if relevance >= 4 else 0
-
-                    except KeyError:
-                        relevance = 0  # unrated items are assumed to be negative
-
-                    collab_score, content_scores = self.compute_scores(user, item)
-
-                    features = [collab_score] + list(content_scores)
+                    print(features, relevance)
 
                     TX.append(features)
 
@@ -493,7 +504,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
 
-    def features(self, training, test, validation=None, run_all=False):
+    def features(self, training, test, validation=None, run_all=False, threshold=4):
 
         if run_all:
             print('Running entity2vec to generate property-specific embeddings...')
@@ -507,25 +518,17 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         if self.validation:
 
-            feat = Parallel(n_jobs=3)(delayed(self._compute_features)
-                                      (data, test=is_test)
-                                      for data, is_test in [(training, False), (test, True), (validation, True)])
+            x_train, y_train, qids_train = self._compute_features(training, threshold=threshold)
 
-            x_train, y_train, qids_train = feat[0]
+            x_test, y_test, qids_test = self._compute_features(test, test=True, threshold=threshold)
 
-            x_test, y_test, qids_test = feat[1]
-
-            x_val, y_val, qids_val = feat[2]
+            x_val, y_val, qids_val = self._compute_features(validation, test=True, threshold=threshold)
 
         else:
 
-            feat = Parallel(n_jobs=2)(delayed(self._compute_features)
-                                      (data, test=is_test)
-                                      for data, is_test in [(training, False), (test, True)])
+            x_train, y_train, qids_train = self._compute_features(training, threshold=threshold)
 
-            x_train, y_train, qids_train = feat[0]
-
-            x_test, y_test, qids_test = feat[1]
+            x_test, y_test, qids_test = self._compute_features(test, test=True, threshold=threshold)
 
             x_val, y_val, qids_val = None, None, None
 
@@ -593,4 +596,3 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         else:
 
             raise ValueError('Fit the model before you evaluate')
-

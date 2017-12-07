@@ -95,6 +95,9 @@ def parse_args():
     parser.add_argument('--N', dest='N', type=int, default=10,
                         help='Cutoff to estimate metric')
 
+    parser.add_argument('--threshold', dest='threshold', default=4,
+                        help='Threshold to convert ratings into binary feedback')
+
     return parser.parse_args()
 
 
@@ -105,13 +108,15 @@ print('Starting entity2rec...')
 args = parse_args()
 
 rec = Entity2Rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks,
-                 args.dimensions, args.window_size, args.workers, args.iter, args.config_file, args.sparql, args.dataset,
-                 args.entities, args.default_graph, args.implicit, args.entity_class, args.feedback_file,
+                 args.dimensions, args.window_size, args.workers, args.iter, args.config_file,args.dataset,
+                 sparql=args.sparql, entities=args.entities,
+                 default_graph=args.default_graph, implicit=args.implicit,
+                 entity_class=args.entity_class, feedback_file=args.feedback_file,
                  all_unrated_items=args.all_unrated_items)
 
 if args.write_features:
 
-    rec.feature_generator()  # writes features to file with SVM format
+    rec.feature_generator(threshold=args.threshold)  # writes features to file with SVM format
 
 else:
 
@@ -120,7 +125,9 @@ else:
         x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.read_features()
 
     else:
-        x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = rec.features(args.train, args.test, validation=args.validation)
+        x_train, y_train, qids_train, x_test, y_test, qids_test,\
+        x_val, y_val, qids_val = rec.features(args.train, args.test,
+                                              validation=args.validation, threshold=args.threshold)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
         print('Starting to fit the model...')
