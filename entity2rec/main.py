@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument('--config_file', nargs='?', default='config/properties.json',
                         help='Path to configuration file')
 
-    parser.add_argument('--dataset', nargs='?', default='movielens_1m',
+    parser.add_argument('--dataset', nargs='?', default='Movielens1M',
                         help='Dataset')
 
     parser.add_argument('--sparql', dest='sparql',
@@ -107,8 +107,7 @@ print('Starting entity2rec...')
 
 args = parse_args()
 
-rec = Entity2Rec(args.directed, args.preprocessing, args.weighted, args.p, args.q, args.walk_length, args.num_walks,
-                 args.dimensions, args.window_size, args.workers, args.iter, args.config_file,args.dataset,
+rec = Entity2Rec(args.dataset, p=args.p, q=args.q,
                  sparql=args.sparql, entities=args.entities,
                  default_graph=args.default_graph, implicit=args.implicit,
                  entity_class=args.entity_class, feedback_file=args.feedback_file,

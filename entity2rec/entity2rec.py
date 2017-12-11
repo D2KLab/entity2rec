@@ -19,8 +19,11 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
     """Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph
     embeddings and user feedback and feeds them into a learning to rank algorithm"""
 
-    def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size,
-                 workers, iterations, config, dataset, sparql=False, entities=False, default_graph=False,
+    def __init__(self, dataset, is_directed=False, preprocessing=True, is_weighted=False,
+                 p=1, q=4, walk_length=10,
+                 num_walks=500, dimensions=500, window_size=10,
+                 workers=8, iterations=5, config='config/properties.json',
+                 sparql=False, entities=False, default_graph=False,
                  implicit=False, entity_class=False,
                  feedback_file=False, all_unrated_items=False):
 
@@ -67,13 +70,11 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self._define_metrics()
 
-    def _get_embedding_files(self):
+    def _set_embedding_files(self):
 
         """
         Sets the list of embedding files
         """
-
-        print(self.properties)
 
         for prop in self.properties:
             prop_short = prop
@@ -297,7 +298,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         if run_all:
             super(Entity2Rec, self).run()  # run entity2vec
 
-        self._get_embedding_files()
+        self._set_embedding_files()
 
         # write training set
 
@@ -511,7 +512,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             super(Entity2Rec, self).run()  # run entity2vec
 
         # reads the embedding files
-        self._get_embedding_files()
+        self._set_embedding_files()
 
         # reads .dat format
         self._parse_data(training, test, validation=validation)
