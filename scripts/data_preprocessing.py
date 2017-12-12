@@ -18,8 +18,12 @@ def get_real_length(l):
 
     return len(list(set(l)))
 
+# reproducible results
 
-dataset = 'LastFM'
+np.random.seed(1)
+
+
+dataset = 'LibraryThing'
 
 # different datasets use different separators
 
