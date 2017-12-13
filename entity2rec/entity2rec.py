@@ -473,11 +473,9 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
-                user_item_features = Parallel(n_jobs=-1)(delayed(self._compute_user_item_features)
-                                      (user, item, threshold=threshold)
-                                      for item in candidate_items)
+                for item in candidate_items:
 
-                for features, relevance in user_item_features:
+                    features, relevance = self._compute_user_item_features(user, item)
 
                     TX.append(features)
 
@@ -519,20 +517,25 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         if self.validation:
 
-            print('Features for train')
-            x_train, y_train, qids_train = self._compute_features(training, threshold=threshold)
+            user_item_features = Parallel(n_jobs=3)(delayed(self._compute_features)
+                                  (data, test, threshold=threshold)
+                                  for data, test in [(training, False), (test, True), (validation, True)])
 
-            print('Features for test')
-            x_test, y_test, qids_test = self._compute_features(test, test=True, threshold=threshold)
+            x_train, y_train, qids_train = user_item_features[0]
 
-            print('Features for val')
-            x_val, y_val, qids_val = self._compute_features(validation, test=True, threshold=threshold)
+            x_test, y_test, qids_test = user_item_features[1]
+
+            x_val, y_val, qids_val = user_item_features[2]
 
         else:
 
-            x_train, y_train, qids_train = self._compute_features(training, threshold=threshold)
+            user_item_features = Parallel(n_jobs=2)(delayed(self._compute_features)
+                                  (data, test, threshold=threshold)
+                                  for data, test in [(training, False), (test, True)])
 
-            x_test, y_test, qids_test = self._compute_features(test, test=True, threshold=threshold)
+            x_train, y_train, qids_train = user_item_features[0]
+
+            x_test, y_test, qids_test = user_item_features[1]
 
             x_val, y_val, qids_val = None, None, None
 
