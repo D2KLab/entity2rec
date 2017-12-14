@@ -80,8 +80,6 @@ class Sparql(object):
 
         self.properties.append("dct:subject")
 
-        self.properties.append("rdf:type")
-
     def get_property_graphs(self):
 
         properties = self.properties
@@ -173,12 +171,12 @@ class Sparql(object):
 if __name__ == '__main__':
 
     parser = optparse.OptionParser()
-    parser.add_option('-e', '--entities', dest = 'entity_file', help = 'entity file name', default='all')
+    parser.add_option('-e', '--entities', dest='entity_file', help = 'entity file name', default='all')
     parser.add_option('-c', '--config_file', default='config/properties.json', help='Path to configuration file')
-    parser.add_option('-k', '--dataset', dest = 'dataset', help='dataset')
-    parser.add_option('-m', '--endpoint', dest = 'endpoint', help='sparql endpoint')
-    parser.add_option('-d', '--default_graph', dest = 'default_graph', help = 'default graph', default=False)
-    parser.add_option('--entity_class', dest = 'entity_class', help = 'entity class', default=False)
+    parser.add_option('-k', '--dataset', dest='dataset', help='dataset')
+    parser.add_option('-m', '--endpoint', dest='endpoint', help='sparql endpoint')
+    parser.add_option('-d', '--default_graph', dest='default_graph', help = 'default graph', default=False)
+    parser.add_option('--entity_class', dest='entity_class', help = 'entity class', default=False)
 
     (options, args) = parser.parse_args()
 
