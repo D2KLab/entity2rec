@@ -115,7 +115,7 @@ rec = Entity2Rec(args.dataset, p=args.p, q=args.q,
 
 if args.write_features:
 
-    rec.feature_generator(threshold=args.threshold)  # writes features to file with SVM format
+    rec.feature_generator(run_all=args.run_all, threshold=args.threshold)  # writes features to file with SVM format
 
 else:
 
@@ -126,7 +126,7 @@ else:
     else:
         x_train, y_train, qids_train, x_test, y_test, qids_test,\
         x_val, y_val, qids_val = rec.features(args.train, args.test,
-                                              validation=args.validation, threshold=args.threshold)
+                                              validation=args.validation, threshold=args.threshold, run_all=args.run_all)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
         print('Starting to fit the model...')
