@@ -4,6 +4,9 @@ import optparse
 import codecs
 from os import mkdir
 import json
+from collections import Counter
+import operator
+import sys
 
 ################################################################
 ## contains SPARQL queries to get property-specific subgraphs ##
@@ -12,7 +15,7 @@ import json
 
 class Sparql(object):
 
-    def __init__ (self, entities, config_file, dataset, endpoint, default_graph, entity_class):
+    def __init__(self, entities, config_file, dataset, endpoint, default_graph, entity_class):
 
         self.entities = entities  # file containing a list of entities
 
@@ -53,16 +56,16 @@ class Sparql(object):
 
             if not self.entity_class:
 
-                query_all_prop = "SELECT distinct ?p " \
-                                 "WHERE {?s ?p ?o. FILTER(!isLiteral(?o) && regex(STR(?p),\"dbpedia.org/ontology\"))}"
+                query_all_prop = "SELECT distinct ?p WHERE {?s ?p ?o. FILTER(!isLiteral(?o) && regex(STR(?p),\"dbpedia.org/ontology\"))}"
 
                 self._get_properties(query_all_prop)
 
             else:
 
-                query_category_prop = "select distinct ?p " \
-                                      "where { ?s a dbo:Band. ?s ?p ?o. " \
-                                      "FILTER(!isLiteral(?o) && regex(STR(?p),\"dbpedia.org/ontology\"))} "
+                query_category_prop = 'select distinct ?s ?p ?o ' \
+                                      'where {{ ?s a dbo:{}. ?s ?p ?o. ' \
+                                      'FILTER(!isLiteral(?o) && regex(STR(?p),' \
+                                      '"dbpedia.org/ontology"))}} '.format(self.entity_class)
 
                 self._get_properties(query_category_prop)
 
@@ -74,11 +77,34 @@ class Sparql(object):
 
         self.wrapper.setReturnFormat(JSON)
 
-        for results in self.wrapper.query().convert()['results']['bindings']:
+        if self.entity_class:
 
-            self.properties.append(results['p']['value'])
+            c = Counter()
+
+            for results in self.wrapper.query().convert()['results']['bindings']:
+
+                prop = results['p']['value']
+
+                if 'wiki' not in prop and 'thumb' not in prop:
+
+                    c[prop] += 1
+
+            top_10_prop = sorted(c.items(), key=operator.itemgetter(1), reverse=True)[0:10]
+
+            for p, count in top_10_prop:
+
+                print(p, count)
+
+                self.properties.append(p)
+
+        else:
+            for results in self.wrapper.query().convert()['results']['bindings']:
+
+                self.properties.append(results['p']['value'])
 
         self.properties.append("dct:subject")
+
+        print(self.properties)
 
     def get_property_graphs(self):
 
@@ -111,7 +137,7 @@ class Sparql(object):
 
             with codecs.open('datasets/%s/graphs/%s.edgelist' %(self.dataset, prop_short),'w', encoding='utf-8') as prop_graph: #open a property file graph
 
-                if self.entities == "all":
+                if self.entities:
 
                     self.wrapper.setQuery(self.query_prop%prop_namespace)
 
@@ -171,7 +197,7 @@ class Sparql(object):
 if __name__ == '__main__':
 
     parser = optparse.OptionParser()
-    parser.add_option('-e', '--entities', dest='entity_file', help = 'entity file name', default='all')
+    parser.add_option('-e', '--entities', dest='entity_file', help='entity file name', default=False)
     parser.add_option('-c', '--config_file', default='config/properties.json', help='Path to configuration file')
     parser.add_option('-k', '--dataset', dest='dataset', help='dataset')
     parser.add_option('-m', '--endpoint', dest='endpoint', help='sparql endpoint')

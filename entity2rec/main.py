@@ -4,6 +4,7 @@ import argparse
 
 
 def parse_args():
+
     """
     Parses the entity2rec arguments.
     """
@@ -53,11 +54,10 @@ def parse_args():
     parser.add_argument('--dataset', nargs='?', default='Movielens1M',
                         help='Dataset')
 
-    parser.add_argument('--sparql', dest='sparql',
+    parser.add_argument('--sparql', dest='sparql', default=False,
                         help='Whether downloading the graphs from a sparql endpoint')
-    parser.set_defaults(sparql=False)
 
-    parser.add_argument('--entities', dest='entities', default="all",
+    parser.add_argument('--entities', dest='entities', default=False,
                         help='A specific list of entities for which the embeddings have to be computed')
 
     parser.add_argument('--default_graph', dest='default_graph', default=False,

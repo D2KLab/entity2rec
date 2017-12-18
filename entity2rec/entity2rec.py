@@ -128,7 +128,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.all_items = []
 
-        if self.entities != "all":  # if it has been provided a list of items as an external file, read from it
+        if self.entities:  # if it has been provided a list of items as an external file, read from it
 
             del self.all_train_items  # free memory space
 
