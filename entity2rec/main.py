@@ -111,11 +111,11 @@ rec = Entity2Rec(args.dataset, p=args.p, q=args.q,
                  sparql=args.sparql, entities=args.entities,
                  default_graph=args.default_graph, implicit=args.implicit,
                  entity_class=args.entity_class, feedback_file=args.feedback_file,
-                 all_unrated_items=args.all_unrated_items)
+                 all_unrated_items=args.all_unrated_items, threshold=args.threshold)
 
 if args.write_features:
 
-    rec.feature_generator(run_all=args.run_all, threshold=args.threshold)  # writes features to file with SVM format
+    rec.feature_generator(run_all=args.run_all)  # writes features to file with SVM format
 
 else:
 
@@ -126,7 +126,7 @@ else:
     else:
         x_train, y_train, qids_train, x_test, y_test, qids_test,\
         x_val, y_val, qids_val = rec.features(args.train, args.test,
-                                              validation=args.validation, threshold=args.threshold, run_all=args.run_all)
+                                              validation=args.validation, run_all=args.run_all)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
         print('Starting to fit the model...')

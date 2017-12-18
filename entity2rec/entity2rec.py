@@ -25,7 +25,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                  workers=8, iterations=5, config='config/properties.json',
                  sparql=False, entities=False, default_graph=False,
                  implicit=False, entity_class=False,
-                 feedback_file=False, all_unrated_items=False):
+                 feedback_file=False, all_unrated_items=False, threshold=4):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
                             window_size, workers, iterations, config, sparql, dataset, entities, default_graph,
@@ -36,6 +36,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         self.implicit = implicit
 
         self.all_unrated_items = all_unrated_items
+
+        self.threshold = threshold
 
         # initializing object variables that will be assigned later
 
@@ -112,7 +114,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 self.items_ratings_by_user_test[(u, item)] = relevance  # independently from the rating
 
-                if self.implicit is False and relevance >= 4:  # only relevant items are used to compute the similarity, rel = 5 in a previous work
+                if self.implicit is False and relevance >= self.threshold:  # only relevant items are used to compute the similarity, rel = 5 in a previous work
 
                     self.items_liked_by_user_dict[u].append(item)
 
@@ -238,7 +240,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         # binarization of the relevance values
 
         if self.implicit is False:
-            relevance = 1 if relevance >= 4 else 0
+            relevance = 1 if relevance >= self.threshold else 0
 
         return user, user_id, item, relevance
 
@@ -293,7 +295,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return candidate_items
 
-    def feature_generator(self, run_all=False, threshold=4):
+    def feature_generator(self, run_all=False):
 
         if run_all:
             super(Entity2Rec, self).run()  # run entity2vec
@@ -356,7 +358,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                                       (user, item)])  # get the relevance score if it's in the test
 
                         if self.implicit is False:
-                            rel = 1 if rel >= threshold else 0
+                            rel = 1 if rel >= self.threshold else 0
 
                     except KeyError:
                         rel = 0  # unrated items are assumed to be negative
@@ -394,7 +396,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                                           (user, item)])  # get the relevance score if it's in the test
 
                             if self.implicit is False:
-                                rel = 1 if rel >= threshold else 0
+                                rel = 1 if rel >= self.threshold else 0
 
                         except KeyError:
                             rel = 0  # unrated items are assumed to be negative
@@ -434,14 +436,14 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
 
-    def _compute_user_item_features(self, user, item, threshold=4):
+    def _compute_user_item_features(self, user, item):
 
         try:
             relevance = int(self.items_ratings_by_user_test[
                                 (user, item)])  # get the relevance score if it's in the test
 
             if self.implicit is False:
-                relevance = 1 if relevance >= threshold else 0
+                relevance = 1 if relevance >= self.threshold else 0
 
         except KeyError:
             relevance = 0  # unrated items are assumed to be negative
@@ -452,7 +454,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return features, relevance
 
-    def _compute_features(self, data, test=False, threshold=4):
+    def _compute_features(self, data, test=False):
 
         TX = []
         Ty = []
@@ -503,7 +505,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
 
-    def features(self, training, test, validation=None, run_all=False, threshold=4):
+    def features(self, training, test, validation=None, run_all=False):
 
         if run_all:
             print('Running entity2vec to generate property-specific embeddings...')
@@ -518,7 +520,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         if self.validation:
 
             user_item_features = Parallel(n_jobs=3)(delayed(self._compute_features)
-                                  (data, test, threshold=threshold)
+                                  (data, test)
                                   for data, test in [(training, False), (test, True), (validation, True)])
 
             x_train, y_train, qids_train = user_item_features[0]
@@ -530,7 +532,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         else:
 
             user_item_features = Parallel(n_jobs=2)(delayed(self._compute_features)
-                                  (data, test, threshold=threshold)
+                                  (data, test)
                                   for data, test in [(training, False), (test, True)])
 
             x_train, y_train, qids_train = user_item_features[0]
