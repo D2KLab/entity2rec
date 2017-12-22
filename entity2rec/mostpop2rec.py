@@ -168,19 +168,6 @@ class MostPop2Rec(Entity2Rec):
 
         return features, relevance
 
-    """
-    def features(self, training, test, validation=None):
-
-        self.pop_dict = compute_most_pop_dict(training, threshold=self.threshold)
-
-        x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val = \
-            super(MostPop2Rec, self).features(training, test, validation=validation)  # call the features function of entity2rec
-
-        print(x_train.shape, y_train.shape)
-
-        return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
-    """
-
     def _compute_features(self, data, test=False):
 
         TX = []

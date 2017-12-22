@@ -35,7 +35,7 @@ class Entity2Rel(object):
         return score
 
     # get all the relatedness scores
-    def relatedness_scores(self, uri1, uri2, skip = False):
+    def relatedness_scores(self, uri1, uri2, skip=False):
 
         scores = []
 

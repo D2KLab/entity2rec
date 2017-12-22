@@ -25,7 +25,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                  workers=8, iterations=5, config='config/properties.json',
                  sparql=False, entities=False, default_graph=False,
                  implicit=False, entity_class=False,
-                 feedback_file=False, all_unrated_items=False, threshold=4):
+                 feedback_file=False, all_unrated_items=True, threshold=4):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
                             window_size, workers, iterations, config, sparql, dataset, entities, default_graph,
@@ -297,9 +297,15 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def feature_generator(self, run_all=False):
 
+        # define the properties
+        self.define_properties(entities=self.all_items)
+
+        # run entity2vec to create the embeddings
         if run_all:
+            print('Running entity2vec to generate property-specific embeddings...')
             super(Entity2Rec, self).run()  # run entity2vec
 
+        # reads the embedding files
         self._set_embedding_files()
 
         # write training set
@@ -311,8 +317,11 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         feature_path = 'features/%s/p%d_q%d/' % (self.dataset, int(self.p), int(self.q))
 
         try:
+
             os.makedirs(feature_path)
+
         except:
+
             pass
 
         feature_file = feature_path + '%s_p%d_q%d.svm' % (train_name, int(self.p), int(self.q))
@@ -507,15 +516,19 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def features(self, training, test, validation=None, run_all=False):
 
+        # reads .dat format
+        self._parse_data(training, test, validation=validation)
+
+        # define the properties
+        self.define_properties(entities=self.all_items)
+
+        # run entity2vec to create the embeddings
         if run_all:
             print('Running entity2vec to generate property-specific embeddings...')
             super(Entity2Rec, self).run()  # run entity2vec
 
         # reads the embedding files
         self._set_embedding_files()
-
-        # reads .dat format
-        self._parse_data(training, test, validation=validation)
 
         if self.validation:
 
@@ -596,6 +609,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         if self.model and self.metrics:
 
             preds = self.model.predict(x_test)
+
+            print(len(qids_test))
 
             for name, metric in self.metrics.items():
 

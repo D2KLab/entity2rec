@@ -11,12 +11,10 @@ from sparql import Sparql
 import shutil
 
 
-####################################################################################
-## Generates a set of property-speficic entity embeddings from a Knowledge Graph ###
-####################################################################################
-
-
 class Entity2Vec(Node2Vec):
+
+    """Generates a set of property-specific entity embeddings from a Knowledge Graph"""
+
     def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size,
                  workers, iterations, config, sparql, dataset, entities, default_graph, entity_class, feedback_file):
 
@@ -37,9 +35,7 @@ class Entity2Vec(Node2Vec):
 
         self.feedback_file = feedback_file
 
-        self._define_properties()
-
-    def _define_properties(self):
+    def define_properties(self, entities=False):
 
         with codecs.open(self.config_file, 'r', encoding='utf-8') as config_read:
 
@@ -50,12 +46,11 @@ class Entity2Vec(Node2Vec):
             self.properties = [i for i in property_file[self.dataset]]
             self.properties.append('feedback')
 
-        except KeyError:  # if no list of properties is specified, take them all
+        except KeyError:  # no list of properties specified in the config file
 
             if self.sparql:  # get all the properties from the sparql endpoint
 
-                sparql_query = Sparql(self.entities, self.config_file, self.dataset, self.sparql, self.default_graph,
-                                      self.entity_class)
+                sparql_query = Sparql(entities, self.config_file, self.dataset, self.sparql, self.default_graph)
 
                 self.properties = sparql_query.properties
 
@@ -131,8 +126,7 @@ class Entity2Vec(Node2Vec):
     def run(self):
 
         if self.sparql:
-            sparql_query = Sparql(self.entities, self.config_file, self.dataset, self.sparql, self.default_graph,
-                                  self.entity_class)
+            sparql_query = Sparql(self.entities, self.config_file, self.dataset, self.sparql, self.default_graph)
 
             sparql_query.get_property_graphs()
 
@@ -209,6 +203,7 @@ class Entity2Vec(Node2Vec):
 
 
 if __name__ == '__main__':
+
     start_time = time.time()
 
     args = Entity2Vec.parse_args()

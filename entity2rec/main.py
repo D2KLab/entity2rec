@@ -80,8 +80,9 @@ def parse_args():
     parser.add_argument('--feedback_file', dest='feedback_file', default=False,
                         help='Path to a DAT file that contains all the couples user-item')
 
-    parser.add_argument('--all_unrated_items', dest='all_unrated_items', action='store_true', default=False,
-                        help='Whether removing the rated items of the training set from the candidates')
+    parser.add_argument('--all_items', dest='all_unrated_items', action='store_false', default=True,
+                        help='Whether keeping the rated items of the training set as candidates. '
+                             'Default is AllUnratedItems')
 
     parser.add_argument('--write_features', dest='write_features', action='store_true', default=False,
                         help='Writes the features to file')
