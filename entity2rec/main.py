@@ -54,7 +54,7 @@ def parse_args():
     parser.add_argument('--dataset', nargs='?', default='Movielens1M',
                         help='Dataset')
 
-    parser.add_argument('--train', dest='train', help='train', default=False)
+    parser.add_argument('--train', dest='train', help='train')
 
     parser.add_argument('--test', dest='test', help='test')
 
