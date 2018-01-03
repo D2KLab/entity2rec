@@ -75,11 +75,28 @@ class Sparql(object):
 
                 c[prop] += 1
 
-        top_10_prop = sorted(c.items(), key=operator.itemgetter(1), reverse=True)[0:10]
+        sorted_props = sorted(c.items(), key=operator.itemgetter(1), reverse=True)
 
-        for p, count in top_10_prop:
+        print(sorted_props)
 
-            self.properties.append(p)
+        self.properties.append(sorted_props[0][0])  # add the first ranked property
+
+        for i, (p, count) in enumerate(sorted_props[0:-1]):
+
+            next_p = sorted_props[i+1][0]
+            next_count = sorted_props[i+1][1]
+
+            change_rate = (next_count - count) / count
+
+            print(change_rate)
+
+            if change_rate >= - 0.5:  # check whether the freq drop is larger than 50%
+
+                self.properties.append(next_p)
+
+            else:
+
+                break
 
         self.properties.append("dct:subject")
 
@@ -117,9 +134,11 @@ class Sparql(object):
             with codecs.open('datasets/%s/graphs/%s.edgelist' % (self.dataset, prop_short), 'w',
                              encoding='utf-8') as prop_graph:  # open a property file graph
 
-                if self.entities:
+                for uri in self.entities:
 
-                    self.wrapper.setQuery(self.query_prop % prop_namespace)
+                    uri = '<' + uri + '>'
+
+                    self.wrapper.setQuery(self.query_prop_uri % (prop_namespace, uri))
 
                     for result in self.wrapper.query().convert()['results']['bindings']:
                         subj = result['s']['value']
@@ -129,30 +148,6 @@ class Sparql(object):
                         print((subj, obj))
 
                         prop_graph.write('%s %s\n' % (subj, obj))
-
-                else:
-
-                    with codecs.open('%s' % self.entities, 'r',
-                                     encoding='utf-8') as f:  # open entity file, select only those entities
-
-                        for uri in f:  # for each entity
-
-                            uri = uri.strip('\n')
-
-                            uri = '<' + uri + '>'
-
-                            self.wrapper.setQuery(self.query_prop_uri % (prop_namespace, uri))
-
-                            for result in self.wrapper.query().convert()['results']['bindings']:
-                                subj = result['s']['value']
-
-                                obj = result['o']['value']
-
-                                print((subj, obj))
-
-                                prop_graph.write('%s %s\n' % (subj, obj))
-
-                        f.seek(0)  # reinitialize iterator
 
     @staticmethod
     def get_uri_from_wiki_id(wiki_id):
@@ -168,6 +163,7 @@ class Sparql(object):
             uri = sparql.query().convert()['results']['bindings'][0]['s']['value']
 
         except:
+
             uri = None
 
         return uri
@@ -186,7 +182,7 @@ if __name__ == '__main__':
 
     entities = list()
 
-    with open('datasets/%s/all.dat' %options.dataset, 'r') as read_all:
+    with open('datasets/%s/all.dat' % options.dataset, 'r') as read_all:
 
         for line in read_all:
 
@@ -199,4 +195,6 @@ if __name__ == '__main__':
     sparql_query = Sparql(entities, options.config_file, options.dataset, options.endpoint,
                           options.default_graph)
 
-    #sparql_query.get_property_graphs()
+    sparql_query.get_property_graphs()
+
+

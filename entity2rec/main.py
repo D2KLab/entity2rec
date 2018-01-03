@@ -54,15 +54,6 @@ def parse_args():
     parser.add_argument('--dataset', nargs='?', default='Movielens1M',
                         help='Dataset')
 
-    parser.add_argument('--sparql', dest='sparql', default=False,
-                        help='Whether downloading the graphs from a sparql endpoint')
-
-    parser.add_argument('--entities', dest='entities', default=False,
-                        help='A specific list of entities for which the embeddings have to be computed')
-
-    parser.add_argument('--default_graph', dest='default_graph', default=False,
-                        help='Default graph to query when using a Sparql endpoint')
-
     parser.add_argument('--train', dest='train', help='train', default=False)
 
     parser.add_argument('--test', dest='test', help='test')
@@ -74,8 +65,6 @@ def parse_args():
 
     parser.add_argument('--implicit', dest='implicit', action='store_true', default=False,
                         help='Implicit feedback with boolean values')
-
-    parser.add_argument('--entity_class', dest='entity_class', help='entity class', default=False)
 
     parser.add_argument('--feedback_file', dest='feedback_file', default=False,
                         help='Path to a DAT file that contains all the couples user-item')
@@ -109,9 +98,9 @@ print('Starting entity2rec...')
 args = parse_args()
 
 rec = Entity2Rec(args.dataset, p=args.p, q=args.q,
-                 sparql=args.sparql, entities=args.entities,
-                 default_graph=args.default_graph, implicit=args.implicit,
-                 entity_class=args.entity_class, feedback_file=args.feedback_file,
+                 implicit=args.implicit, feedback_file=args.feedback_file, walk_length=args.walk_length,
+                 num_walks=args.num_walks, dimensions=args.dimensions, window_size=args.window_size,
+                 workers=args.workers, iterations=args.iter,
                  all_unrated_items=args.all_unrated_items, threshold=args.threshold)
 
 if args.write_features:

@@ -1,6 +1,11 @@
 { 
-	"dbpedia" : ["rdf:type", "altogether"],
-	"3cixty" : ["http://data.linkedevents.org/def/location#businessTypeTop","http://data.linkedevents.org/def/location#businessType"]
+   "Movielens1M" : ["dbo:director", "dbo:starring", "dbo:distributor", "dbo:writer",
+	   "dbo:musicComposer", "dbo:producer", "dbo:cinematography", "dbo:editing", "dct:subject"],
 
+   "LastFM" : ["dbo:genre", "dbo:recordLabel", "dbo:hometown", "dbo:associatedBand", "dbo:associatedMusicalArtis",
+   "dbo:birthPlace", "dbo:bandMember", "dbo:formerBandMember", "dbo:occupation", "dbo:instrument", "dct:subject"],
+
+  "LibraryThing" : ["dbo:author", "dbo:publisher", "dbo:literaryGenre", "dbo:mediaType", "dbo:subsequentWork",
+  "dbo:previousWork", "dbo:series", "dbo:country", "dbo:language", "dbo:coverArtist", "dct:subject"]
 }
 

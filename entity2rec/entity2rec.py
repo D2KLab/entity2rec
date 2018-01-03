@@ -23,13 +23,10 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                  p=1, q=4, walk_length=10,
                  num_walks=500, dimensions=500, window_size=10,
                  workers=8, iterations=5, config='config/properties.json',
-                 sparql=False, entities=False, default_graph=False,
-                 implicit=False, entity_class=False,
-                 feedback_file=False, all_unrated_items=True, threshold=4):
+                 implicit=False, feedback_file=False, all_unrated_items=True, threshold=4):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
-                            window_size, workers, iterations, config, sparql, dataset, entities, default_graph,
-                            entity_class, feedback_file)
+                            window_size, workers, iterations, config, dataset, feedback_file)
 
         Entity2Rel.__init__(self)  # binary format embeddings
 
@@ -38,6 +35,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         self.all_unrated_items = all_unrated_items
 
         self.threshold = threshold
+
+        self.define_properties()
 
         # initializing object variables that will be assigned later
 
@@ -130,24 +129,36 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.all_items = []
 
-        if self.entities:  # if it has been provided a list of items as an external file, read from it
+        with codecs.open(self.test, 'r', encoding='utf-8') as test:
 
-            del self.all_train_items  # free memory space
+            test_items = []
 
-            with codecs.open(self.entities, 'r', encoding='utf-8') as items:
+            for line in test:
+                line = line.split(' ')
 
-                for item in items:
-                    item = item.strip('\n')
+                u = line[0]
 
-                    self.all_items.append(item)
+                item = line[1]
 
-        else:  # otherwise join the items from the train, validation and test set
+                relevance = int(line[2])
 
-            with codecs.open(self.test, 'r', encoding='utf-8') as test:
+                test_items.append(item)
 
-                test_items = []
+                self.items_ratings_by_user_test[(u, item)] = relevance
 
-                for line in test:
+            self.all_items = list(set(self.all_train_items + test_items))  # merge lists and remove duplicates
+
+            del self.all_train_items
+
+        if self.validation:
+
+            self.items_ratings_by_user_val = {}
+
+            with codecs.open(self.validation, 'r', encoding='utf-8') as val:
+
+                val_items = []
+
+                for line in val:
                     line = line.split(' ')
 
                     u = line[0]
@@ -156,36 +167,11 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                     relevance = int(line[2])
 
-                    test_items.append(item)
+                    val_items.append(item)
 
-                    self.items_ratings_by_user_test[(u, item)] = relevance
+                    self.items_ratings_by_user_val[(u, item)] = relevance
 
-                self.all_items = list(set(self.all_train_items + test_items))  # merge lists and remove duplicates
-
-                del self.all_train_items
-
-            if self.validation:
-
-                self.items_ratings_by_user_val = {}
-
-                with codecs.open(self.validation, 'r', encoding='utf-8') as val:
-
-                    val_items = []
-
-                    for line in val:
-                        line = line.split(' ')
-
-                        u = line[0]
-
-                        item = line[1]
-
-                        relevance = int(line[2])
-
-                        val_items.append(item)
-
-                        self.items_ratings_by_user_val[(u, item)] = relevance
-
-                    self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
+                self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
 
     def _define_metrics(self):
 
@@ -297,13 +283,10 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def feature_generator(self, run_all=False):
 
-        # define the properties
-        self.define_properties(entities=self.all_items)
-
         # run entity2vec to create the embeddings
         if run_all:
             print('Running entity2vec to generate property-specific embeddings...')
-            super(Entity2Rec, self).run()  # run entity2vec
+            self.e2v_walks_learn()  # run entity2vec
 
         # reads the embedding files
         self._set_embedding_files()
@@ -519,13 +502,10 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         # reads .dat format
         self._parse_data(training, test, validation=validation)
 
-        # define the properties
-        self.define_properties(entities=self.all_items)
-
         # run entity2vec to create the embeddings
         if run_all:
             print('Running entity2vec to generate property-specific embeddings...')
-            super(Entity2Rec, self).run()  # run entity2vec
+            self.e2v_walks_learn()  # run entity2vec
 
         # reads the embedding files
         self._set_embedding_files()
