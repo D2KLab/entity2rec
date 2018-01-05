@@ -101,6 +101,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             for line in train:
 
+                print(line)
+
                 line = line.split(' ')
 
                 u = line[0]
@@ -113,7 +115,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 self.items_ratings_by_user_test[(u, item)] = relevance  # independently from the rating
 
-                if self.implicit is False and relevance >= self.threshold:  # only relevant items are used to compute the similarity, rel = 5 in a previous work
+                if self.implicit is False and relevance >= self.threshold:  # only relevant items are used to compute the similarity
 
                     self.items_liked_by_user_dict[u].append(item)
 
@@ -266,10 +268,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def get_candidates(self, user):
 
-        # get candidates according to the all items protocol
-        # use as candidates all the the items that are not in the training set
-
         if self.all_unrated_items:
+
             rated_items_train = self.items_rated_by_user_train[user]  # both in the train and in the test
 
             candidate_items = [item for item in self.all_items if
@@ -600,3 +600,32 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         else:
 
             raise ValueError('Fit the model before you evaluate')
+
+    def evaluate_heuristics(self, x_test, y_test, qids_test):
+
+        preds_average = list(map(lambda x: np.mean(x), x_test))  # average of the relatedness scores
+
+        preds_max = list(map(lambda x: np.max(x), x_test))  # max of the relatedness scores
+
+        preds_min = list(map(lambda x: np.min(x), x_test))  # min of the relatedness scores
+
+        print('Average:')
+
+        for name, metric in self.metrics.items():
+
+            if name != 'fit':
+                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_average)))
+
+        print('Min:')
+
+        for name, metric in self.metrics.items():
+
+            if name != 'fit':
+                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_min)))
+
+        print('Max:')
+
+        for name, metric in self.metrics.items():
+
+            if name != 'fit':
+                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_max)))

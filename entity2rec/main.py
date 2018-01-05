@@ -1,4 +1,5 @@
 from entity2rec import Entity2Rec
+from heuristic_combinator import HeuristicCombinator
 import time
 import argparse
 
@@ -103,6 +104,12 @@ rec = Entity2Rec(args.dataset, p=args.p, q=args.q,
                  workers=args.workers, iterations=args.iter,
                  all_unrated_items=args.all_unrated_items, threshold=args.threshold)
 
+heuristic_rec = HeuristicCombinator(args.dataset, p=args.p, q=args.q,
+                 walk_length=args.walk_length,
+                 num_walks=args.num_walks, dimensions=args.dimensions, window_size=args.window_size,
+                 iterations=args.iter,
+                 all_unrated_items=args.all_unrated_items, threshold=args.threshold)
+
 if args.write_features:
 
     rec.feature_generator(run_all=args.run_all)  # writes features to file with SVM format
@@ -127,5 +134,7 @@ else:
     print('Finished fitting the model after %s seconds' % (time.time() - start_time))
 
     rec.evaluate(x_test, y_test, qids_test)  # evaluates the model on the test set
+
+    rec.evaluate_heuristics(x_test, y_test, qids_test)  # evaluates the heuristics on the test set
 
 print("--- %s seconds ---" % (time.time() - start_time))
