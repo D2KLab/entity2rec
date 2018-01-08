@@ -1,5 +1,4 @@
 from entity2rec import Entity2Rec
-from heuristic_combinator import HeuristicCombinator
 import time
 import argparse
 
@@ -102,12 +101,6 @@ rec = Entity2Rec(args.dataset, p=args.p, q=args.q,
                  implicit=args.implicit, feedback_file=args.feedback_file, walk_length=args.walk_length,
                  num_walks=args.num_walks, dimensions=args.dimensions, window_size=args.window_size,
                  workers=args.workers, iterations=args.iter,
-                 all_unrated_items=args.all_unrated_items, threshold=args.threshold)
-
-heuristic_rec = HeuristicCombinator(args.dataset, p=args.p, q=args.q,
-                 walk_length=args.walk_length,
-                 num_walks=args.num_walks, dimensions=args.dimensions, window_size=args.window_size,
-                 iterations=args.iter,
                  all_unrated_items=args.all_unrated_items, threshold=args.threshold)
 
 if args.write_features:

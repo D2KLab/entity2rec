@@ -270,7 +270,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         if self.all_unrated_items:
 
-            rated_items_train = self.items_rated_by_user_train[user]  # both in the train and in the test
+            rated_items_train = self.items_rated_by_user_train[user]
 
             candidate_items = [item for item in self.all_items if
                                item not in rated_items_train]  # all unrated items in the train

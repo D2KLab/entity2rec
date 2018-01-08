@@ -141,6 +141,7 @@ class Sparql(object):
                     self.wrapper.setQuery(self.query_prop_uri % (prop_namespace, uri))
 
                     for result in self.wrapper.query().convert()['results']['bindings']:
+
                         subj = result['s']['value']
 
                         obj = result['o']['value']
@@ -196,5 +197,3 @@ if __name__ == '__main__':
                           options.default_graph)
 
     sparql_query.get_property_graphs()
-
-
