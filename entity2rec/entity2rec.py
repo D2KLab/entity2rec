@@ -101,8 +101,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             for line in train:
 
-                print(line)
-
                 line = line.split(' ')
 
                 u = line[0]
@@ -589,8 +587,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         if self.model and self.metrics:
 
             preds = self.model.predict(x_test)
-
-            print(len(qids_test))
 
             for name, metric in self.metrics.items():
 
