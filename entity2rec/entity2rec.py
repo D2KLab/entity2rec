@@ -512,7 +512,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         if self.validation:
 
-            user_item_features = Parallel(n_jobs=3)(delayed(self._compute_features)
+            user_item_features = Parallel(n_jobs=3, backend='threading')(delayed(self._compute_features)
                                   (data, test)
                                   for data, test in [(training, False), (test, True), (validation, True)])
 
@@ -524,7 +524,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         else:
 
-            user_item_features = Parallel(n_jobs=2)(delayed(self._compute_features)
+            user_item_features = Parallel(n_jobs=2, backend='threading')(delayed(self._compute_features)
                                   (data, test)
                                   for data, test in [(training, False), (test, True)])
 
