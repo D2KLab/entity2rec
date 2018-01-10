@@ -88,6 +88,9 @@ def parse_args():
     parser.add_argument('--threshold', dest='threshold', default=4,
                         help='Threshold to convert ratings into binary feedback')
 
+    parser.add_argument('--num_users', dest='num_users', type=int, default=False,
+                        help='Sample of users for evaluation')
+
     return parser.parse_args()
 
 
@@ -116,7 +119,7 @@ else:
     else:
         x_train, y_train, qids_train, x_test, y_test, qids_test,\
         x_val, y_val, qids_val = rec.features(args.train, args.test,
-                                              validation=args.validation, run_all=args.run_all)
+                                              validation=args.validation, run_all=args.run_all, n_users=args.num_users)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
         print('Starting to fit the model...')

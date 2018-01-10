@@ -111,8 +111,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 self.items_rated_by_user_train[u].append(item)
 
-                self.items_ratings_by_user_test[(u, item)] = relevance  # independently from the rating
-
                 if self.implicit is False and relevance >= self.threshold:  # only relevant items are used to compute the similarity
 
                     self.items_liked_by_user_dict[u].append(item)
@@ -134,6 +132,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             test_items = []
 
             for line in test:
+
                 line = line.split(' ')
 
                 u = line[0]
@@ -426,36 +425,61 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
 
-    def _compute_user_item_features(self, user, item):
+    def get_relevance(self, user, item, val_set=False):
+
+        if val_set:
+
+            feedback = self.items_ratings_by_user_val
+
+        else:
+
+            feedback = self.items_ratings_by_user_test
 
         try:
-            relevance = int(self.items_ratings_by_user_test[
-                                (user, item)])  # get the relevance score if it's in the test
+            relevance = int(feedback[(user, item)])  # get the relevance score if it's in the test
 
             if self.implicit is False:
                 relevance = 1 if relevance >= self.threshold else 0
 
         except KeyError:
+
             relevance = 0  # unrated items are assumed to be negative
+
+        return relevance
+
+    def _compute_user_item_features(self, user, item):
 
         collab_score, content_scores = self.compute_scores(user, item)
 
         features = [collab_score] + list(content_scores)
 
-        return features, relevance
+        return features
 
-    def _compute_features(self, data, test=False):
+    def _compute_features(self, data, negative_candidates=False, n_users=False, val_set=False):
 
         TX = []
         Ty = []
         Tqids = []
 
+        if n_users:
+
+            users_list = list(self.items_rated_by_user_train.keys())[0:n_users]
+
+            check_user = True
+
+        else:
+
+            users_list = list(self.items_rated_by_user_train.keys())
+
+            check_user = False
+
         if self.implicit:  # only positive feedback is available, need to generate false candidataes
+
             test = True
 
-        if test:  # generate the features also for negative candidates
+        if negative_candidates:  # generate the features also for negative candidates
 
-            for user in self.items_rated_by_user_train.keys():
+            for user in users_list:
 
                 print(user)
 
@@ -467,9 +491,11 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 for item in candidate_items:
 
-                    features, relevance = self._compute_user_item_features(user, item)
+                    features = self._compute_user_item_features(user, item)
 
                     TX.append(features)
+
+                    relevance = self.get_relevance(user,item,val_set=val_set)
 
                     Ty.append(relevance)
 
@@ -483,19 +509,35 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                     user, user_id, item, relevance = self.parse_users_items_rel(line)
 
-                    Tqids.append(user_id)
+                    if check_user:
 
-                    collab_score, content_scores = self.compute_scores(user, item)
+                        if str(user_id) in users_list:  # only compute features for a sample of users
 
-                    features = [collab_score] + list(content_scores)
+                            Tqids.append(user_id)
 
-                    TX.append(features)
+                            collab_score, content_scores = self.compute_scores(user, item)
 
-                    Ty.append(relevance)
+                            features = [collab_score] + list(content_scores)
+
+                            TX.append(features)
+
+                            Ty.append(relevance)
+
+                    else:
+
+                        Tqids.append(user_id)
+
+                        collab_score, content_scores = self.compute_scores(user, item)
+
+                        features = [collab_score] + list(content_scores)
+
+                        TX.append(features)
+
+                        Ty.append(relevance)
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
 
-    def features(self, training, test, validation=None, run_all=False):
+    def features(self, training, test, validation=None, run_all=False, n_users=False):
 
         # reads .dat format
         self._parse_data(training, test, validation=validation)
@@ -511,8 +553,10 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         if self.validation:
 
             user_item_features = Parallel(n_jobs=3, backend='threading')(delayed(self._compute_features)
-                                  (data, test)
-                                  for data, test in [(training, False), (test, True), (validation, True)])
+                                  (data, negative_candidates, n_users, val_set)
+                                  for data, negative_candidates, val_set in [(training, False, False),
+                                                                              (test, True, False),
+                                                                              (validation, True, True)])
 
             x_train, y_train, qids_train = user_item_features[0]
 
@@ -523,8 +567,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         else:
 
             user_item_features = Parallel(n_jobs=2, backend='threading')(delayed(self._compute_features)
-                                  (data, test)
-                                  for data, test in [(training, False), (test, True)])
+                                  (data, negative_candidates, n_users)
+                                  for data, negative_candidates in [(training, False), (test, True)])
 
             x_train, y_train, qids_train = user_item_features[0]
 
