@@ -578,7 +578,9 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
 
-    def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None, optimize='AP', N=10):
+    def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None,
+            optimize='AP', N=10, lr=0.1, n_estimators=100, max_depth=3,
+            max_features=None):
 
         # choose the metric to optimize during the fit process
 
@@ -604,12 +606,10 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.model = pyltr.models.LambdaMART(
             metric=self.metrics['fit'],
-            n_estimators=1000,
-            learning_rate=0.02,
-            max_features=0.5,
-            query_subsample=0.5,
-            max_leaf_nodes=10,
-            min_samples_leaf=64,
+            n_estimators=n_estimators,
+            learning_rate=lr,
+            max_depth=max_depth,
+            max_features=max_features,
             verbose=1
         )
 
@@ -618,7 +618,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         if self.validation:
 
             monitor = pyltr.models.monitors.ValidationMonitor(
-                x_val, y_val, qids_val, metric=self.metrics['fit'], stop_after=250)
+                x_val, y_val, qids_val, metric=self.metrics['fit'])
 
             self.model.fit(x_train, y_train, qids_train, monitor=monitor)
 
@@ -669,3 +669,10 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             if name != 'fit':
                 print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_max)))
+
+    def reset_model(self):
+
+        self.model = pyltr.models.LambdaMART(
+            metric=self.metrics['fit'],
+            verbose=1
+        )
