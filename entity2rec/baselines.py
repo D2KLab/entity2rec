@@ -53,7 +53,7 @@ print('linear')
 evaluat.evaluate(lin, x_test, y_test, qids_test)  # evaluates the recommender on the test set
 
 print('logistic')
-evaluat.evaluate(logistic, x_test, y_test, q    ids_test)  # evaluates the recommender on the test set
+evaluat.evaluate(logistic, x_test, y_test, qids_test)  # evaluates the recommender on the test set
 
 print('svm')
 evaluat.evaluate(svm, x_test, y_test, qids_test)  # evaluates the recommender on the test set
