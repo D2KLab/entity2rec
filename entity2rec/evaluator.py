@@ -7,25 +7,41 @@ import numpy as np
 from random import shuffle
 
 
+def parse_line(line):
+
+    line = line.split(' ')
+
+    u = line[0]
+
+    item = line[1]
+
+    relevance = int(line[2])
+
+    return u, item, relevance
+
+
 class Evaluator(object):
 
     def __init__(self, implicit=False, threshold=4, all_unrated_items=True):
 
+        """
+        Evaluates a recommender system using ranking metrics
+        :param implicit: whether it is binary feedback or has to converted
+        :param threshold: threshold to convert rating in binary feedback
+        :param all_unrated_items: whether using the allunrated items eval protocol
+        """
+
         self.implicit = implicit
 
-        self.all_unrated_items = all_unrated_items
+        self.all_unrated_items = all_unrated_items  # evalua
 
-        self.threshold = threshold
+        self.threshold = threshold  # threshold to convert ratings into positive implicit feedback
 
-        self.training = None
+        self.model = None  # model object to train
 
-        self.validation = None
+        self.metrics = {}  # defines the metrics to be evaluated
 
-        self.test = None
-
-        self.model = None
-
-        self.metrics = None
+        self.feedback = {}  # save users feedback in a dictionary for train, val and test
 
     def _parse_data(self, training, test, validation=None):
 
@@ -36,41 +52,23 @@ class Evaluator(object):
         :param validation: validation set (optional)
         """
 
-        self.training = training
-
-        self.validation = validation
-
-        self.test = test
-
-        self._get_items_liked_by_user()  # defines the dictionary of items liked by each user in the training set
-
-        self._get_all_items()  # define all the items that can be used as candidates for the recommandations
-
-        self._define_metrics()
-
-    def _get_items_liked_by_user(self):
-
-        self.all_train_items = []
+        self.all_items = []
 
         self.items_liked_by_user_dict = collections.defaultdict(list)
 
-        self.items_ratings_by_user_test = {}
-
         self.items_rated_by_user_train = collections.defaultdict(list)
 
-        with codecs.open(self.training, 'r', encoding='utf-8') as train:
+        with codecs.open(training, 'r', encoding='utf-8') as train:
+
+            all_train_items = []
 
             for line in train:
 
-                line = line.split(' ')
-
-                u = line[0]
-
-                item = line[1]
-
-                relevance = int(line[2])
+                u, item, relevance = parse_line(line)
 
                 self.items_rated_by_user_train[u].append(item)
+
+                self.feedback[(u, item, 'train')] = relevance
 
                 if self.implicit is False and relevance >= self.threshold:  # only relevant items are used to compute the similarity
 
@@ -80,58 +78,41 @@ class Evaluator(object):
 
                     self.items_liked_by_user_dict[u].append(item)
 
-                self.all_train_items.append(item)
+                all_train_items.append(item)
 
-        self.all_train_items = list(set(self.all_train_items))  # remove duplicates
-
-    def _get_all_items(self):
-
-        self.all_items = []
-
-        with codecs.open(self.test, 'r', encoding='utf-8') as test:
+        with codecs.open(test, 'r', encoding='utf-8') as test:
 
             test_items = []
 
             for line in test:
 
-                line = line.split(' ')
-
-                u = line[0]
-
-                item = line[1]
-
-                relevance = int(line[2])
+                u, item, relevance = parse_line(line)
 
                 test_items.append(item)
 
-                self.items_ratings_by_user_test[(u, item)] = relevance
+                self.feedback[(u, item, 'test')] = relevance
 
-            self.all_items = list(set(self.all_train_items + test_items))  # merge lists and remove duplicates
+            self.all_items = list(set(all_train_items + test_items))  # merge lists and remove duplicates
 
-            del self.all_train_items
-
-        if self.validation:
+        if validation:
 
             self.items_ratings_by_user_val = {}
 
-            with codecs.open(self.validation, 'r', encoding='utf-8') as val:
+            with codecs.open(validation, 'r', encoding='utf-8') as val:
 
                 val_items = []
 
                 for line in val:
-                    line = line.split(' ')
 
-                    u = line[0]
-
-                    item = line[1]
-
-                    relevance = int(line[2])
+                    u, item, relevance = parse_line(line)
 
                     val_items.append(item)
 
-                    self.items_ratings_by_user_val[(u, item)] = relevance
+                    self.feedback[(u, item, 'val')] = relevance
 
                 self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
+
+        self._define_metrics()
 
     def _define_metrics(self):
 
@@ -147,55 +128,29 @@ class Evaluator(object):
             'MRR': mrr.MRR(k=M)  # MRR
         }
 
-    def parse_users_items_rel(self, line):
+    def get_candidates(self, user, data):
 
-        line = line.split(' ')
-
-        user = line[0]  # user29
-
-        user_id = int(user.strip('user'))  # 29
-
-        item = line[1]  # http://dbpedia.org/resource/The_Golden_Child
-
-        relevance = int(line[2])  # 5
-
-        # binarization of the relevance values
-
-        if self.implicit is False:
-
-            relevance = 1 if relevance >= self.threshold else 0
-
-        return user, user_id, item, relevance
-
-    def get_candidates(self, user):
-
-        if self.all_unrated_items:
+        if self.all_unrated_items and data != 'train':
 
             rated_items_train = self.items_rated_by_user_train[user]
 
             candidate_items = [item for item in self.all_items if
                                item not in rated_items_train]  # all unrated items in the train
 
-        else:
+        else:  # for training set features, need to include training items
 
             candidate_items = self.all_items
 
         return candidate_items
 
-    def get_relevance(self, user, item, val_set=False):
-
-        if val_set:
-
-            feedback = self.items_ratings_by_user_val
-
-        else:
-
-            feedback = self.items_ratings_by_user_test
+    def get_relevance(self, user, item, data):
 
         try:
-            relevance = int(feedback[(user, item)])  # get the relevance score if it's in the test
+
+            relevance = int(self.feedback[(user, item, data)])  # get the relevance score if it's in the data
 
             if self.implicit is False:
+
                 relevance = 1 if relevance >= self.threshold else 0
 
         except KeyError:
@@ -209,13 +164,19 @@ class Evaluator(object):
         # reads .dat format
         self._parse_data(training, test, validation=validation)
 
-        if self.validation:
+        if n_users:  # select a sub-sample of users
+
+            users_list = list(self.items_rated_by_user_train.keys())[0:n_users]
+
+        else:  # select all users
+
+            users_list = list(self.items_rated_by_user_train.keys())
+
+        if validation:
 
             user_item_features = Parallel(n_jobs=3, backend='threading')(delayed(self._compute_features)
-                                  (data, recommender, negative_candidates, n_users, val_set)
-                                  for data, recommender, negative_candidates, val_set in [(training, recommender, False, False),
-                                                                              (test, recommender, True, False),
-                                                                              (validation, recommender, True, True)])
+                                  (data, recommender, users_list)
+                                  for data in ['train', 'test', 'val'])
 
             x_train, y_train, qids_train = user_item_features[0]
 
@@ -226,8 +187,8 @@ class Evaluator(object):
         else:
 
             user_item_features = Parallel(n_jobs=2, backend='threading')(delayed(self._compute_features)
-                                  (data, negative_candidates, n_users)
-                                  for data, negative_candidates in [(training, False), (test, True)])
+                                  (data, recommender, n_users)
+                                  for data in ['train', 'test'])
 
             x_train, y_train, qids_train = user_item_features[0]
 
@@ -237,87 +198,35 @@ class Evaluator(object):
 
         return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
 
-    def _compute_features(self, data, recommender, negative_candidates=False, n_users=False, val_set=False):
+    def _compute_features(self, data, recommender, users_list):
 
         TX = []
         Ty = []
         Tqids = []
 
-        if n_users:
+        for user in users_list:
 
-            users_list = list(self.items_rated_by_user_train.keys())[0:n_users]
+            print(user)
 
-            check_user = True
+            user_id = int(user.strip('user'))
 
-        else:
+            candidate_items = self.get_candidates(user, data)
 
-            users_list = list(self.items_rated_by_user_train.keys())
+            shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
-            check_user = False
+            for item in candidate_items:
 
-        if self.implicit:  # only positive feedback is available, need to generate false candidataes
+                items_liked_by_user = self.items_liked_by_user_dict[user]
 
-            negative_candidates = True
+                features = recommender.compute_user_item_features(user, item, items_liked_by_user)
 
-        if negative_candidates:  # generate the features also for negative candidates
+                TX.append(features)
 
-            for user in users_list:
+                relevance = self.get_relevance(user, item, data)
 
-                print(user)
+                Ty.append(relevance)
 
-                user_id = int(user.strip('user'))
-
-                candidate_items = self.get_candidates(user)
-
-                shuffle(candidate_items)  # relevant and non relevant items are shuffled
-
-                for item in candidate_items:
-
-                    items_liked_by_user = self.items_liked_by_user_dict[user]
-
-                    features = recommender.compute_user_item_features(user, item, items_liked_by_user)
-
-                    TX.append(features)
-
-                    relevance = self.get_relevance(user, item, val_set=val_set)
-
-                    Ty.append(relevance)
-
-                    Tqids.append(user_id)
-
-        else:  # only generate features for data in the training set
-
-            with codecs.open(data, 'r', encoding='utf-8') as data_file:
-
-                for line in data_file:
-
-                    user, user_id, item, relevance = self.parse_users_items_rel(line)
-
-                    if check_user:
-
-                        if str(user_id) in users_list:  # only compute features for a sample of users
-
-                            Tqids.append(user_id)
-
-                            items_liked_by_user = self.items_liked_by_user_dict[user]
-
-                            features = recommender.compute_user_item_features(user, item, items_liked_by_user)
-
-                            TX.append(features)
-
-                            Ty.append(relevance)
-
-                    else:
-
-                        Tqids.append(user_id)
-
-                        items_liked_by_user = self.items_liked_by_user_dict[user]
-
-                        features = recommender.compute_user_item_features(user, item, items_liked_by_user)
-
-                        TX.append(features)
-
-                        Ty.append(relevance)
+                Tqids.append(user_id)
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
 

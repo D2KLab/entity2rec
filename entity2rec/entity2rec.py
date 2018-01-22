@@ -70,7 +70,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             sims.append(self.relatedness_scores(past_item, item,
                                                 -1))  # append a list of property-specific scores, skip feedback
 
-        if len(sims) == 0:
+        if len(sims) == 0:  # no content properties for the item
             sims = 0.5 * np.ones(len(self.properties) - 1)
             return sims
 
