@@ -232,7 +232,7 @@ class Evaluator(object):
 
     def evaluate(self, recommender, x_test, y_test, qids_test):
 
-        if recommender.model and self.metrics:
+        if self.metrics:
 
             preds = recommender.predict(x_test)
 
@@ -240,10 +240,6 @@ class Evaluator(object):
 
                 if name != 'fit':
                     print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds)))
-
-        else:
-
-            raise ValueError('Fit the model before you evaluate')
 
     def evaluate_heuristics(self, x_test, y_test, qids_test):
 
