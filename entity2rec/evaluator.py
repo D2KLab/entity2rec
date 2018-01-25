@@ -5,6 +5,7 @@ from joblib import Parallel, delayed
 import pyltr
 import numpy as np
 from random import shuffle
+from sklearn import preprocessing
 
 
 def parse_line(line):
@@ -175,14 +176,20 @@ class Evaluator(object):
         if validation:
 
             user_item_features = Parallel(n_jobs=3, backend='threading')(delayed(self._compute_features)
-                                  (data, recommender, users_list)
-                                  for data in ['train', 'test', 'val'])
+                                 (data, recommender, users_list)
+                                 for data in ['train', 'test', 'val'])
 
             x_train, y_train, qids_train = user_item_features[0]
 
+            x_train = preprocessing.scale(x_train)
+
             x_test, y_test, qids_test = user_item_features[1]
 
+            x_test = preprocessing.scale(x_test)
+
             x_val, y_val, qids_val = user_item_features[2]
+
+            x_val = preprocessing.scale(x_val)
 
         else:
 
@@ -192,7 +199,11 @@ class Evaluator(object):
 
             x_train, y_train, qids_train = user_item_features[0]
 
+            x_train = preprocessing.scale(x_train)
+
             x_test, y_test, qids_test = user_item_features[1]
+
+            x_test = preprocessing.scale(x_test)
 
             x_val, y_val, qids_val = None, None, None
 
@@ -239,6 +250,7 @@ class Evaluator(object):
             for name, metric in self.metrics.items():
 
                 if name != 'fit':
+
                     print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds)))
 
     def evaluate_heuristics(self, x_test, y_test, qids_test):

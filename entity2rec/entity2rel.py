@@ -14,51 +14,26 @@ class Entity2Rel(object):
     def __init__(self, binary=True):
 
         self.binary = binary
-        self.embedding_files = []
+        self.embedding_files = {}
 
     # add embedding file
-    def add_embedding(self, embedding_file):
+    def add_embedding(self, property, embedding_file):
 
-        self.embedding_files.append(KeyedVectors.load_word2vec_format(embedding_file, binary=self.binary))
+        self.embedding_files[property] = KeyedVectors.load_word2vec_format(embedding_file, binary=self.binary)
 
-    # access a particular embedding file and get the relatedness score
-    def relatedness_score_by_position(self, uri1, uri2, pos):
+    def relatedness_score(self, property, uri1, uri2):
+
+        emb_file = self.embedding_files[property]
 
         try:
 
-            score = self.embedding_files[pos].similarity(uri1, uri2)
+            score = emb_file.similarity(uri1, uri2)
 
         except KeyError:
 
             score = 0.
 
         return score
-
-    # get all the relatedness scores
-    def relatedness_scores(self, uri1, uri2, skip=False):
-
-        scores = []
-
-        if skip:
-            ind = skip
-        else:
-            ind = len(self.embedding_files)  # unless provided with a skip index, take them all
-
-        if uri1 is None or uri2 is None:
-
-            scores = [0.]
-
-        for embedding in self.embedding_files[0:ind]:
-
-            try:
-
-                scores.append(embedding.similarity(uri1,uri2))
-
-            except KeyError:
-
-                scores.append(0.)
-
-        return scores
 
     # parse ceccarelli benchmark line
     @staticmethod

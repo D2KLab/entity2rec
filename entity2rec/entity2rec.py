@@ -49,7 +49,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             if '/' in prop:
                 prop_short = prop.split('/')[-1]
 
-            self.add_embedding(u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s_iter%d_winsize%d.emd' % (
+            self.add_embedding(prop, u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s_iter%d_winsize%d.emd' % (
                 self.dataset, prop_short, self.num_walks, int(self.p), int(self.q), self.walk_length, self.dimensions,
                 self.iter,
                 self.window_size))
@@ -58,7 +58,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         # feedback property
 
-        return self.relatedness_score_by_position(user, item, -1)
+        return self.relatedness_score('feedback', user, item)
 
     def content_similarities(self, user, item, items_liked_by_user):
 
@@ -66,15 +66,19 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         sims = []
 
-        for past_item in items_liked_by_user:
-            sims.append(self.relatedness_scores(past_item, item,
-                                                -1))  # append a list of property-specific scores, skip feedback
+        for prop in self.properties:  # append a list of property-specific scores, skip feedback
 
-        if len(sims) == 0:  # no content properties for the item
-            sims = 0.5 * np.ones(len(self.properties) - 1)
-            return sims
+            if prop != 'feedback':
 
-        return np.mean(sims, axis=0)  # return a list of averages of property-specific scores
+                sims_prop = []
+
+                for past_item in items_liked_by_user:
+
+                    sims_prop.append(self.relatedness_score(prop, past_item, item))
+
+                sims.append(np.mean(sims_prop))
+
+        return sims
 
     def _compute_scores(self, user, item, items_liked_by_user):
 
