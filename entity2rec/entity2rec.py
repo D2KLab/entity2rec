@@ -18,7 +18,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                  p=1, q=4, walk_length=10,
                  num_walks=500, dimensions=500, window_size=10,
                  workers=8, iterations=5, config='config/properties.json',
-                 feedback_file=False):
+                 feedback_file=False, collab_only=False, content_only=False):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
                             window_size, workers, iterations, config, dataset, feedback_file)
@@ -37,6 +37,12 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         # initialize model to None
         self.model = None
+
+        # whether using only collab or content features
+
+        self.collab_only = collab_only
+
+        self.content_only = content_only
 
     def _set_embedding_files(self):
 
@@ -92,7 +98,21 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         collab_score, content_scores = self._compute_scores(user, item, items_liked_by_user)
 
-        features = [collab_score] + list(content_scores)
+        if self.collab_only is False and self.content_only is False:
+
+            features = [collab_score] + list(content_scores)
+
+        elif self.collab_only is True and self.content_only is False:
+
+            features = [collab_score]
+
+        elif self.content_only is True and self.collab_only is False:
+
+            features = list(content_scores)
+
+        else:
+
+            raise ValueError('Cannot be both collab only and content only')
 
         return features
 

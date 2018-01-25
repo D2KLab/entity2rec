@@ -2,6 +2,9 @@ from entity2rec import Entity2Rec
 from evaluator import Evaluator
 import time
 from parse_args import parse_args
+import numpy as np
+
+np.random.seed(1)  # fixed seed for reproducibility
 
 start_time = time.time()
 
@@ -13,7 +16,8 @@ args = parse_args()
 e2rec = Entity2Rec(args.dataset, run_all=args.run_all, p=args.p, q=args.q,
                    feedback_file=args.feedback_file, walk_length=args.walk_length,
                    num_walks=args.num_walks, dimensions=args.dimensions, window_size=args.window_size,
-                   workers=args.workers, iterations=args.iter)
+                   workers=args.workers, iterations=args.iter, collab_only=args.collab_only,
+                   content_only=args.content_only)
 
 # initialize evaluator
 
@@ -38,3 +42,13 @@ evaluat.evaluate(e2rec, x_test, y_test, qids_test)  # evaluates the recommender 
 evaluat.evaluate_heuristics(x_test, y_test, qids_test)  # evaluates the heuristics on the test set
 
 print("--- %s seconds ---" % (time.time() - start_time))
+
+with open('features.svm', 'w') as feature_file:
+
+    for i, x_train in enumerate(x_train):
+
+        for j, f in enumerate(x_train):
+
+            feature_file.write('%f,' % f)
+
+        feature_file.write('%f\n' % y_train[i])

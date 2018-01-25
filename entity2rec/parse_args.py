@@ -71,6 +71,12 @@ def parse_args():
                         help='Whether keeping the rated items of the training set as candidates. '
                              'Default is AllUnratedItems')
 
+    parser.add_argument('--collab_only', dest='collab_only', action='store_true', default=False,
+                        help='Only use collab filtering')
+
+    parser.add_argument('--content_only', dest='content_only', action='store_true', default=False,
+                        help='Only use content filtering')
+
     parser.add_argument('--write_features', dest='write_features', action='store_true', default=False,
                         help='Writes the features to file')
 
@@ -88,5 +94,7 @@ def parse_args():
 
     parser.add_argument('--num_users', dest='num_users', type=int, default=False,
                         help='Sample of users for evaluation')
+
+
 
     return parser.parse_args()
