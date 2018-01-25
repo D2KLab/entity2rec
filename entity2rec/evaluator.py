@@ -241,7 +241,9 @@ class Evaluator(object):
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
 
-    def evaluate(self, recommender, x_test, y_test, qids_test):
+    def evaluate(self, recommender, x_test, y_test, qids_test, verbose=True):
+
+        scores = []
 
         if self.metrics:
 
@@ -251,7 +253,15 @@ class Evaluator(object):
 
                 if name != 'fit':
 
-                    print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds)))
+                    score = metric.calc_mean(qids_test, y_test, preds)
+
+                    scores.append((name, score))
+
+                    if verbose:
+
+                        print('%s-----%f\n' % (name, score))
+
+        return scores
 
     def evaluate_heuristics(self, x_test, y_test, qids_test):
 
