@@ -26,7 +26,7 @@ evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrate
 # compute e2rec features
 x_train, y_train, qids_train, x_test, y_test, qids_test,\
 x_val, y_val, qids_val = evaluat.features(e2rec, args.train, args.test,
-                                          validation=args.validation, n_users=args.num_users)
+                                          validation=args.validation, n_users=args.num_users, n_jobs=args.workers)
 
 print('Finished computing features after %s seconds' % (time.time() - start_time))
 print('Starting to fit the model...')

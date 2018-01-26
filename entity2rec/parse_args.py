@@ -95,6 +95,4 @@ def parse_args():
     parser.add_argument('--num_users', dest='num_users', type=int, default=False,
                         help='Sample of users for evaluation')
 
-
-
     return parser.parse_args()

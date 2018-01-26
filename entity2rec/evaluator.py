@@ -160,7 +160,7 @@ class Evaluator(object):
 
         return relevance
 
-    def features(self, recommender, training, test, validation=None, n_users=False):
+    def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4):
 
         # reads .dat format
         self._parse_data(training, test, validation=validation)
@@ -173,41 +173,64 @@ class Evaluator(object):
 
             users_list = list(self.items_rated_by_user_train.keys())
 
+        def chunkify(lst, n):
+
+            return [lst[i::n] for i in range(n)]
+
+        users_list_chunks = chunkify(users_list, n_jobs)
+
         if validation:
 
-            user_item_features = Parallel(n_jobs=3, backend='threading')(delayed(self._compute_features)
-                                 (data, recommender, users_list)
-                                 for data in ['train', 'test', 'val'])
-
-            x_train, y_train, qids_train = user_item_features[0]
+            print('Compute features for training')
+            x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
 
             x_train = preprocessing.scale(x_train)
 
-            x_test, y_test, qids_test = user_item_features[1]
+            print('Compute features for testing')
+            x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
 
             x_test = preprocessing.scale(x_test)
 
-            x_val, y_val, qids_val = user_item_features[2]
+            print('Compute features for validation')
+            x_val, y_val, qids_val = self._compute_features_parallel('val', recommender, users_list_chunks, n_jobs)
 
             x_val = preprocessing.scale(x_val)
 
         else:
 
-            user_item_features = Parallel(n_jobs=2, backend='threading')(delayed(self._compute_features)
-                                  (data, recommender, n_users)
-                                  for data in ['train', 'test'])
-
-            x_train, y_train, qids_train = user_item_features[0]
+            print('Compute features for training')
+            x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
 
             x_train = preprocessing.scale(x_train)
 
-            x_test, y_test, qids_test = user_item_features[1]
+            print('Compute features for testing')
+            x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
 
             x_test = preprocessing.scale(x_test)
 
             x_val, y_val, qids_val = None, None, None
 
         return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
+
+    def _compute_features_parallel(self, data, recommender, users_list_chunks, n_jobs):
+
+        user_item_features = Parallel(n_jobs=n_jobs, backend='threading')(delayed(self._compute_features)
+                                                                          (data, recommender, users_list)
+                                                                          for users_list in users_list_chunks)
+
+        x_chunks = [user_item_features[i][0] for i in range(n_jobs)]
+
+        y_chunks = [user_item_features[i][1] for i in range(n_jobs)]
+
+        qids_chunks = [user_item_features[i][2] for i in range(n_jobs)]
+
+        x = np.concatenate(x_chunks, axis=0)
+
+        y = np.concatenate(y_chunks, axis=0)
+
+        qids = np.concatenate(qids_chunks, axis=0)
+
+        return x, y, qids
 
     def _compute_features(self, data, recommender, users_list):
 
