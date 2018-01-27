@@ -214,7 +214,7 @@ class Evaluator(object):
 
     def _compute_features_parallel(self, data, recommender, users_list_chunks, n_jobs):
 
-        user_item_features = Parallel(n_jobs=n_jobs, backend='threading')(delayed(self._compute_features)
+        user_item_features = Parallel(n_jobs=n_jobs)(delayed(self._compute_features)
                                                                           (data, recommender, users_list)
                                                                           for users_list in users_list_chunks)
 
