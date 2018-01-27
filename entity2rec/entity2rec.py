@@ -72,15 +72,23 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         sims = []
 
-        for prop in self.properties[0:-1]:  # append a list of property-specific scores, skip feedback
+        if not items_liked_by_user:  # no past positive feedback
 
-            sims_prop = []
+            sims = np.zeros(len(self.properties)-1)
 
-            for past_item in items_liked_by_user:
+        else:
 
-                sims_prop.append(self.relatedness_score(prop, past_item, item))
+            for prop in self.properties[0:-1]:  # append a list of property-specific scores, skip feedback
 
-            sims.append(np.mean(sims_prop))
+                sims_prop = []
+
+                for past_item in items_liked_by_user:
+
+                    sims_prop.append(self.relatedness_score(prop, past_item, item))
+
+                s = np.mean(sims_prop)
+
+                sims.append(s)
 
         return sims
 
