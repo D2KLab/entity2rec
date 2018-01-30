@@ -129,18 +129,32 @@ class Evaluator(object):
             'MRR': mrr.MRR(k=M)  # MRR
         }
 
-    def get_candidates(self, user, data):
+    def get_candidates(self, user, data, num_negative_candidates=100):
+
+        rated_items_train = self.items_rated_by_user_train[user]
+
+        unrated_items = [item for item in self.all_items if
+                               item not in rated_items_train]
 
         if self.all_unrated_items and data != 'train':
 
-            rated_items_train = self.items_rated_by_user_train[user]
-
-            candidate_items = [item for item in self.all_items if
-                               item not in rated_items_train]  # all unrated items in the train
+            candidate_items = unrated_items  # all unrated items in the train
 
         else:  # for training set features, need to include training items
 
-            candidate_items = self.all_items
+            if self.implicit:  # sample negative items randomly
+
+                negative_candidates = np.random.choice(unrated_items, num_negative_candidates, replace=False)
+
+                candidate_items = negative_candidates + rated_items_train
+
+            else:  # use positive and negative feedback from the training set
+
+                items_rated_by_user = self.items_rated_by_user_train[user]
+
+                candidate_items = items_rated_by_user
+
+        print(candidate_items)
 
         return candidate_items
 
@@ -161,6 +175,8 @@ class Evaluator(object):
         return relevance
 
     def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4):
+
+        assert (n_users >= n_jobs), "Number of users cannot be lower than number of workers"
 
         # reads .dat format
         self._parse_data(training, test, validation=validation)
