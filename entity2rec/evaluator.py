@@ -154,8 +154,6 @@ class Evaluator(object):
 
                 candidate_items = items_rated_by_user
 
-        print(candidate_items)
-
         return candidate_items
 
     def get_relevance(self, user, item, data):
