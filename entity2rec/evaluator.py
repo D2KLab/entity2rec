@@ -174,7 +174,8 @@ class Evaluator(object):
 
     def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4):
 
-        assert (n_users >= n_jobs), "Number of users cannot be lower than number of workers"
+        if n_users:
+            assert (n_users >= n_jobs), "Number of users cannot be lower than number of workers"
 
         # reads .dat format
         self._parse_data(training, test, validation=validation)
