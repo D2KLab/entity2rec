@@ -1,4 +1,3 @@
-from entity2rec import Entity2Rec
 import time
 from gensim.models.keyedvectors import KeyedVectors
 import numpy as np

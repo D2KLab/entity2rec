@@ -174,9 +174,6 @@ class Evaluator(object):
 
     def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4, supervised=True):
 
-        if n_users:
-            assert (n_users >= n_jobs), "Number of users cannot be lower than number of workers"
-
         # reads .dat format
         self._parse_data(training, test, validation=validation)
 
@@ -187,6 +184,8 @@ class Evaluator(object):
         else:  # select all users
 
             users_list = list(self.items_rated_by_user_train.keys())
+
+        assert (len(users_list) >= n_jobs), "Number of users cannot be lower than number of workers"
 
         def chunkify(lst, n):
 
