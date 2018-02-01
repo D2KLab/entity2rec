@@ -144,7 +144,7 @@ class Evaluator(object):
 
             if self.implicit:  # sample negative items randomly
 
-                negative_candidates = np.random.choice(unrated_items, num_negative_candidates, replace=False)
+                negative_candidates = list(np.random.choice(unrated_items, num_negative_candidates, replace=False))
 
                 candidate_items = negative_candidates + rated_items_train
 
