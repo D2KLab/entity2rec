@@ -4,6 +4,9 @@ from evaluator import Evaluator
 from parse_args import parse_args
 from node2vec_recommender import Node2VecRecommender
 from node2vec import Node2Vec
+import sys
+
+sys.append('.')
 
 np.random.seed(1)  # fixed seed for reproducibility
 
