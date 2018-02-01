@@ -6,7 +6,7 @@ from node2vec_recommender import Node2VecRecommender
 from node2vec import Node2Vec
 import sys
 
-sys.append('.')
+sys.path.append('.')
 
 np.random.seed(1)  # fixed seed for reproducibility
 
