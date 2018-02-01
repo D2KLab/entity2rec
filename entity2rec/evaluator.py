@@ -172,7 +172,7 @@ class Evaluator(object):
 
         return relevance
 
-    def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4):
+    def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4, supervised=True):
 
         if n_users:
             assert (n_users >= n_jobs), "Number of users cannot be lower than number of workers"
@@ -196,27 +196,41 @@ class Evaluator(object):
 
         if validation:
 
-            print('Compute features for training')
-            x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
-
-            x_train = preprocessing.scale(x_train)
-
             print('Compute features for testing')
             x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
 
             x_test = preprocessing.scale(x_test)
 
-            print('Compute features for validation')
-            x_val, y_val, qids_val = self._compute_features_parallel('val', recommender, users_list_chunks, n_jobs)
+            if supervised:
 
-            x_val = preprocessing.scale(x_val)
+                print('Compute features for training')
+                x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
+
+                x_train = preprocessing.scale(x_train)
+
+                print('Compute features for validation')
+                x_val, y_val, qids_val = self._compute_features_parallel('val', recommender, users_list_chunks, n_jobs)
+
+                x_val = preprocessing.scale(x_val)
+
+            else:
+
+                x_train, y_train, qids_train = None, None, None
+
+                x_val, y_val, qids_val = None, None, None
 
         else:
 
-            print('Compute features for training')
-            x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
+            if supervised:
 
-            x_train = preprocessing.scale(x_train)
+                print('Compute features for training')
+                x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
+
+                x_train = preprocessing.scale(x_train)
+
+            else:
+
+                x_train, y_train, qids_train = None, None, None
 
             print('Compute features for testing')
             x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
