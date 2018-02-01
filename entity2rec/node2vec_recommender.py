@@ -6,18 +6,14 @@ from evaluator import Evaluator
 from parse_args import parse_args
 
 
-class Node2VecRecommender(Entity2Rec):
+class Node2VecRecommender(object):
 
     def __init__(self, dataset, p=1, q=4, walk_length=10,
-                            num_walks=500, dimensions=500, window_size=10, iterations=5):
-
-        Entity2Rec.__init__(self, dataset, p=p, q=q, walk_length=walk_length,
-                            num_walks=num_walks, dimensions=dimensions,
-                            window_size=window_size, iterations=iterations)
+                 num_walks=500, dimensions=500, window_size=10, iterations=5):
 
         self.node2vec_model = KeyedVectors.load_word2vec_format(
             'emb/%s/feedback/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd'
-            % (self.dataset, num_walks, p, q, walk_length, dimensions, iterations, window_size), binary=True)
+            % (dataset, num_walks, p, q, walk_length, dimensions, iterations, window_size), binary=True)
 
     def compute_user_item_features(self, user, item, items_liked_by_user):
 
