@@ -28,7 +28,8 @@ class Evaluator(object):
         """
         Evaluates a recommender system using ranking metrics
         :param implicit: whether it is binary feedback or has to converted
-        :param threshold: threshold to convert rating in binary feedback
+        :param threshold_rel: threshold to convert rating in binary feedback
+        :param threshold_like: threshold to add item to the items liked by user
         :param all_unrated_items: whether using the allunrated items eval protocol
         """
 
@@ -36,7 +37,9 @@ class Evaluator(object):
 
         self.all_unrated_items = all_unrated_items  # evalua
 
-        self.threshold = threshold  # threshold to convert ratings into positive implicit feedback
+        self.threshold_rel = threshold_rel  # threshold to convert ratings into positive implicit feedback
+
+        self.threshold_like = threshold_like  # threshold to add item to the items liked by user
 
         self.model = None  # model object to train
 
@@ -71,7 +74,7 @@ class Evaluator(object):
 
                 self.feedback[(u, item, 'train')] = relevance
 
-                if self.implicit is False and relevance >= self.threshold:  # only relevant items are used to compute the similarity
+                if self.implicit is False and relevance >= self.threshold_like:  # only relevant items are used to compute the similarity
 
                     self.items_liked_by_user_dict[u].append(item)
 
@@ -164,7 +167,7 @@ class Evaluator(object):
 
             if self.implicit is False:
 
-                relevance = 1 if relevance >= self.threshold else 0
+                relevance = 1 if relevance >= self.threshold_rel else 0
 
         except KeyError:
 
