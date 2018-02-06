@@ -6,7 +6,10 @@ from evaluator import Evaluator
 from parse_args import parse_args
 
 
-def compute_most_pop_dict(data, threshold):
+def compute_most_pop_dict(data, threshold, implicit=False):
+
+    if implicit:
+        threshold = 0.5
 
     pop_dict = Counter()
 
@@ -37,9 +40,9 @@ def compute_most_pop_dict(data, threshold):
 
 class MostPop(object):
 
-    def __init__(self, training_set, threshold):
+    def __init__(self, training_set, threshold, implicit=False):
 
-        self.pop_dict = compute_most_pop_dict(training_set, threshold)
+        self.pop_dict = compute_most_pop_dict(training_set, threshold, implicit=implicit)
 
         self.model = True
 
@@ -68,7 +71,7 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    mostpop_rec = MostPop(args.train, args.threshold)
+    mostpop_rec = MostPop(args.train, args.threshold, implicit=args.implicit)
 
     evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
