@@ -89,8 +89,11 @@ def parse_args():
     parser.add_argument('--N', dest='N', type=int, default=10,
                         help='Cutoff to estimate metric')
 
-    parser.add_argument('--threshold', dest='threshold', default=4, type=int,
+    parser.add_argument('--threshold_rel', dest='threshold_rel', default=4, type=int,
                         help='Threshold to convert ratings into binary feedback')
+
+    parser.add_argument('--threshold_like', dest='threshold_like', default=4, type=int,
+                        help='Threshold to add item to those liked by user')
 
     parser.add_argument('--num_users', dest='num_users', type=int, default=False,
                         help='Sample of users for evaluation')

@@ -23,7 +23,7 @@ def parse_line(line):
 
 class Evaluator(object):
 
-    def __init__(self, implicit=False, threshold=4, all_unrated_items=True):
+    def __init__(self, implicit=False, threshold_rel=4, threshold_like=4, all_unrated_items=True):
 
         """
         Evaluates a recommender system using ranking metrics
