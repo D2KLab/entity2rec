@@ -48,6 +48,8 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
 
     feature_eval_file.write('%f\n' % scores[-1][1])
 
+    feature_eval_file.flush()
+
     feature_names = e2rec.properties[0: -1]  # feedback at the end
 
     feature_names.insert(0, 'feedback')  # feedback at the beginning
@@ -80,4 +82,6 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
             feature_eval_file.write('%f,' % score)
 
         feature_eval_file.write('%f\n' % scores[-1][1])
+
+        feature_eval_file.flush()
 
