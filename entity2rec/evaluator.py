@@ -59,6 +59,8 @@ class Evaluator(object):
 
         self.items_rated_by_user_train = collections.defaultdict(list)
 
+        self.users_liking_an_item_dict = collections.defaultdict(list)
+
         with codecs.open(training, 'r', encoding='utf-8') as train:
 
             all_train_items = []
@@ -75,9 +77,13 @@ class Evaluator(object):
 
                     self.items_liked_by_user_dict[u].append(item)
 
+                    self.users_liking_an_item_dict[item].append(u)
+
                 elif self.implicit and relevance == 1:
 
                     self.items_liked_by_user_dict[u].append(item)
+
+                    self.users_liking_an_item_dict[item].append(u)
 
                 all_train_items.append(item)
 
@@ -280,7 +286,9 @@ class Evaluator(object):
 
                 items_liked_by_user = self.items_liked_by_user_dict[user]
 
-                features = recommender.compute_user_item_features(user, item, items_liked_by_user)
+                users_liking_the_item = self.users_liking_an_item_dict[item]
+
+                features = recommender.compute_user_item_features(user, item, items_liked_by_user, users_liking_the_item)
 
                 TX.append(features)
 

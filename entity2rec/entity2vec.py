@@ -16,28 +16,14 @@ class Entity2Vec(Node2Vec):
     """Generates a set of property-specific entity embeddings from a Knowledge Graph"""
 
     def __init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions, window_size,
-                 workers, iterations, config, dataset, feedback_file):
+                 workers, iterations, feedback_file):
 
         Node2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
                           window_size, workers, iterations)
 
-        self.config_file = config
-
-        self.dataset = dataset
-
         self.feedback_file = feedback_file
 
-    def define_properties(self):
-
-        with codecs.open(self.config_file, 'r', encoding='utf-8') as config_read:
-
-            property_file = json.loads(config_read.read())
-
-            self.properties = [i for i in property_file[self.dataset]]
-
-            self.properties.append('feedback')
-
-    def e2v_walks_learn(self):
+    def e2v_walks_learn(self, properties_names, dataset):
 
         n = self.num_walks
 
@@ -55,7 +41,7 @@ class Entity2Vec(Node2Vec):
 
         try:
 
-            makedirs('emb/%s' % self.dataset)
+            makedirs('emb/%s' % dataset)
 
         except:
             pass
@@ -63,31 +49,33 @@ class Entity2Vec(Node2Vec):
         # copy define feedback_file, if declared
         if self.feedback_file:
             print('Copying feedback file %s' % self.feedback_file)
-            shutil.copy2(self.feedback_file, "datasets/%s/graphs/feedback.edgelist" % self.dataset)
+            shutil.copy2(self.feedback_file, "datasets/%s/graphs/feedback.edgelist" % dataset)
 
         # iterate through properties
 
-        for prop_name in self.properties:
+        for prop_name in properties_names:
 
             print(prop_name)
 
             prop_short = prop_name
 
             if '/' in prop_name:
+
                 prop_short = prop_name.split('/')[-1]
 
-            graph = "datasets/%s/graphs/%s.edgelist" % (self.dataset, prop_short)
+            graph = "datasets/%s/graphs/%s.edgelist" % (dataset, prop_short)
 
             try:
-                makedirs('emb/%s/%s' % (self.dataset, prop_short))
+                makedirs('emb/%s/%s' % (dataset, prop_short))
 
             except:
                 pass
 
-            emb_output = "emb/%s/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd" % (self.dataset,
+            emb_output = "emb/%s/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd" % (dataset,
                                                                                    prop_short, n, p, q, l, d, it, win)
 
             print('running with', graph)
+
 
             super(Entity2Vec, self).run(graph, emb_output)  # call the run function defined in parent class node2vec
 

@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument('--dimensions', type=int, default=500,
                         help='Number of dimensions. Default is 128.')
 
-    parser.add_argument('--window-size', type=int, default=10,
+    parser.add_argument('--window_size', type=int, default=10,
                         help='Context size for optimization. Default is 10.')
 
     parser.add_argument('--iter', default=5, type=int,
@@ -52,11 +52,11 @@ def parse_args():
     parser.add_argument('--dataset', nargs='?', default='Movielens1M',
                         help='Dataset')
 
-    parser.add_argument('--train', dest='train', help='train')
+    parser.add_argument('--train', dest='train', help='train', default=None)
 
-    parser.add_argument('--test', dest='test', help='test')
+    parser.add_argument('--test', dest='test', help='test', default=None)
 
-    parser.add_argument('--validation', dest='validation', default=False, help='validation')
+    parser.add_argument('--validation', dest='validation', default=None, help='validation')
 
     parser.add_argument('--run_all', dest='run_all', action='store_true', default=False,
                         help='If computing also the embeddings')

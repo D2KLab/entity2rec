@@ -12,6 +12,16 @@ print('Starting entity2rec...')
 
 args = parse_args()
 
+if not args.train:
+    args.train = 'datasets/'+args.dataset+'/train.dat'
+
+if not args.test:
+    args.test = 'datasets/'+args.dataset+'/test.dat'
+
+if not args.validation:
+    args.validation = 'datasets/'+args.dataset+'/val.dat'
+
+
 # initialize entity2rec recommender
 e2rec = Entity2Rec(args.dataset, run_all=args.run_all, p=args.p, q=args.q,
                    feedback_file=args.feedback_file, walk_length=args.walk_length,

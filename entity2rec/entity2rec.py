@@ -1,4 +1,6 @@
 from __future__ import print_function
+import codecs
+import json
 import numpy as np
 from entity2vec import Entity2Vec
 from entity2rel import Entity2Rel
@@ -6,6 +8,30 @@ import pyltr
 import sys
 sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
+
+
+class Property:
+
+    def __init__(self, name, typology):
+
+        self.name = name
+        self._typology = typology
+
+    @property
+    def typology(self):
+
+        return self._typology
+
+    @typology.setter
+    def typology(self, value):
+
+        if value != 'collaborative' and value != 'content' and value != 'social':
+
+            raise ValueError('Type of property can be: collaborative, content or social')
+
+        else:
+
+            self._typology = value
 
 
 class Entity2Rec(Entity2Vec, Entity2Rel):
@@ -18,19 +44,34 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                  p=1, q=4, walk_length=10,
                  num_walks=500, dimensions=500, window_size=10,
                  workers=8, iterations=5, config='config/properties.json',
-                 feedback_file=False, collab_only=False, content_only=False):
+                 feedback_file=False, collab_only=False, content_only=False,
+                 social_only=False):
 
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
-                            window_size, workers, iterations, config, dataset, feedback_file)
+                            window_size, workers, iterations, feedback_file)
 
         Entity2Rel.__init__(self)  # binary format embeddings
+
+        self.config_file = config
+
+        self.dataset = dataset
+
+        self.properties = []
 
         self.define_properties()
 
         # run entity2vec to create the embeddings
         if run_all:
+
             print('Running entity2vec to generate property-specific embeddings...')
-            self.e2v_walks_learn()  # run entity2vec
+
+            properties_names = []
+
+            for prop in self.properties:
+
+                properties_names.append(prop.name)
+
+            self.e2v_walks_learn(properties_names, dataset)  # run entity2vec
 
         # reads the embedding files
         self._set_embedding_files()
@@ -44,6 +85,20 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.content_only = content_only
 
+        self.social_only = social_only
+
+    def define_properties(self):
+
+        with codecs.open(self.config_file, 'r', encoding='utf-8') as config_read:
+
+            property_file = json.loads(config_read.read())
+
+            for typology in property_file[self.dataset]:
+
+                for property_name in property_file[self.dataset][typology]:
+
+                    self.properties.append(Property(property_name, typology))
+
     def _set_embedding_files(self):
 
         """
@@ -51,74 +106,116 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         """
 
         for prop in self.properties:
-            prop_short = prop
-            if '/' in prop:
-                prop_short = prop.split('/')[-1]
+            prop_name = prop.name
+            prop_short = prop_name
+            if '/' in prop_name:
+                prop_short = prop_name.split('/')[-1]
 
-            self.add_embedding(prop, u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s_iter%d_winsize%d.emd' % (
+            self.add_embedding(prop_name, u'emb/%s/%s/num%s_p%d_q%d_l%s_d%s_iter%d_winsize%d.emd' % (
                 self.dataset, prop_short, self.num_walks, int(self.p), int(self.q), self.walk_length, self.dimensions,
                 self.iter,
                 self.window_size))
 
-    def collab_similarity(self, user, item):
+    def collab_similarities(self, user, item):
 
-        # feedback property
+        # collaborative properties
 
-        return self.relatedness_score('feedback', user, item)
+        collaborative_properties = [prop for prop in self.properties if prop.typology == "collaborative"]
+
+        sims = []
+
+        for prop in collaborative_properties:
+
+            sims.append(self.relatedness_score(prop.name, user, item))
+
+        return list(sims)
 
     def content_similarities(self, user, item, items_liked_by_user):
 
-        # all other properties
+        # content properties
+
+        content_properties = [prop for prop in self.properties if prop.typology == "content"]
 
         sims = []
 
         if not items_liked_by_user:  # no past positive feedback
 
-            sims = np.zeros(len(self.properties)-1)
+            sims = np.zeros(len(content_properties))
 
         else:
 
-            for prop in self.properties[0:-1]:  # append a list of property-specific scores, skip feedback
+            for prop in content_properties:  # append a list of property-specific scores
 
                 sims_prop = []
 
                 for past_item in items_liked_by_user:
 
-                    sims_prop.append(self.relatedness_score(prop, past_item, item))
+                    sims_prop.append(self.relatedness_score(prop.name, past_item, item))
 
                 s = np.mean(sims_prop)
 
                 sims.append(s)
 
-        return sims
+        return list(sims)
 
-    def _compute_scores(self, user, item, items_liked_by_user):
+    def social_similarities(self, user, item, users_liking_the_item):
 
-        collab_score = self.collab_similarity(user, item)
+        # social properties
 
-        content_scores = self.content_similarities(user, item, items_liked_by_user)
+        social_properties = [prop for prop in self.properties if prop.typology == "social"]
 
-        return collab_score, content_scores
+        sims = []
 
-    def compute_user_item_features(self, user, item, items_liked_by_user):
+        if not users_liking_the_item:
 
-        collab_score, content_scores = self._compute_scores(user, item, items_liked_by_user)
-
-        if self.collab_only is False and self.content_only is False:
-
-            features = [collab_score] + list(content_scores)
-
-        elif self.collab_only is True and self.content_only is False:
-
-            features = [collab_score]
-
-        elif self.content_only is True and self.collab_only is False:
-
-            features = list(content_scores)
+            sims = np.zeros(len(social_properties))
 
         else:
 
-            raise ValueError('Cannot be both collab only and content only')
+            for prop in social_properties:  # append a list of property-specific scores
+
+                sims_prop = []
+
+                for past_user in users_liking_the_item:
+
+                    sims_prop.append(self.relatedness_score(prop.name, past_user, user))
+
+                s = np.mean(sims_prop)
+
+                sims.append(s)
+
+        return list(sims)
+
+    def _compute_scores(self, user, item, items_liked_by_user, users_liking_the_item):
+
+        collab_score = self.collab_similarities(user, item)
+
+        content_scores = self.content_similarities(user, item, items_liked_by_user)
+
+        social_scores = self.social_similarities(user, item, users_liking_the_item)
+
+        return collab_score, content_scores, social_scores
+
+    def compute_user_item_features(self, user, item, items_liked_by_user, users_liking_the_item):
+
+        collab_scores, content_scores, social_scores = self._compute_scores(user, item, items_liked_by_user,
+                                                                            users_liking_the_item)
+
+        if self.collab_only:
+
+            features = collab_scores
+
+        elif self.content_only:
+
+            features = content_scores
+
+        elif self.social_only:
+
+            features = social_scores
+
+        else:
+
+            features = collab_scores + content_scores + social_scores
 
         return features
 
