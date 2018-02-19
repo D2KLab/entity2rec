@@ -43,22 +43,19 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
     scores = evaluat.evaluate(e2rec, x_test, y_test, qids_test,
                               verbose=False)  # evaluates the recommender on the test set
 
-    for name, score in scores[0:-1]:
+    for _, score in scores[0:-1]:
+
         feature_eval_file.write('%f,' % score)
 
     feature_eval_file.write('%f\n' % scores[-1][1])
 
     feature_eval_file.flush()
 
-    feature_names = e2rec.properties[0: -1]  # feedback at the end
+    for i, prop in enumerate(e2rec.properties):
 
-    feature_names.insert(0, 'feedback')  # feedback at the beginning
+        print(prop.name)
 
-    for i, feature_name in enumerate(feature_names):
-
-        print(feature_name)
-
-        feature_eval_file.write('%s,' % feature_name)
+        feature_eval_file.write('%s,' % prop.name)
 
         # fit e2rec on one feature at the time
 
@@ -77,7 +74,7 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
         scores = evaluat.evaluate(e2rec, test_feat, y_test, qids_test,
                                   verbose=False)  # evaluates the recommender on the test set
 
-        for name, score in scores[0:-1]:
+        for _, score in scores[0:-1]:
 
             feature_eval_file.write('%f,' % score)
 
