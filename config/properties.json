@@ -11,7 +11,7 @@
   "LibraryThing" : {"collaborative": ["feedback"],
     "content": ["dbo:author", "dbo:publisher", "dbo:literaryGenre", "dbo:mediaType", "dbo:subsequentWork",
   "dbo:previousWork", "dbo:series", "dbo:country", "dbo:language", "dbo:coverArtist", "dct:subject"],
-   "social" : ["friends"]
+   "social" : ["friends", "interesting"]
 }
 }
 
