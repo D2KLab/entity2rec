@@ -82,6 +82,8 @@ class Entity2Vec(Node2Vec):
 
             else:
 
+                print('Embedding file already exist, going to next property...')
+
                 continue
 
     @staticmethod
