@@ -82,3 +82,42 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
 
         feature_eval_file.flush()
 
+    no_social_properties_indexes = []
+
+    for i, prop in enumerate(e2rec.properties):
+
+        if prop.typology == "social":
+            continue
+
+        else:
+            no_social_properties_indexes.append(i)
+
+    print("no social properties")
+
+    feature_eval_file.write('no_social,')
+
+    # fit e2rec on one feature at the time
+
+    train_feat = x_train[:, no_social_properties_indexes]
+    train_feat = train_feat.reshape((-1, len(no_social_properties_indexes)))
+
+    val_feat = x_val[:, no_social_properties_indexes]
+    val_feat = val_feat.reshape((-1, len(no_social_properties_indexes)))
+
+    test_feat = x_test[:, no_social_properties_indexes]
+    test_feat = test_feat.reshape((-1, len(no_social_properties_indexes)))
+
+    e2rec.fit(train_feat, y_train, qids_train,
+              x_val=val_feat, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N)  # train the model
+
+    scores = evaluat.evaluate(e2rec, test_feat, y_test, qids_test,
+                              verbose=False)  # evaluates the recommender on the test set
+
+    for _, score in scores[0:-1]:
+        feature_eval_file.write('%f,' % score)
+
+    feature_eval_file.write('%f\n' % scores[-1][1])
+
+    feature_eval_file.flush()
+
+
