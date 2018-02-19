@@ -74,10 +74,15 @@ class Entity2Vec(Node2Vec):
             emb_output = "emb/%s/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd" % (dataset,
                                                                                    prop_short, n, p, q, l, d, it, win)
 
-            print('running with', graph)
+            if not isfile(emb_output):  # check if embedding file already exists
 
+                print('running with', graph)
 
-            super(Entity2Vec, self).run(graph, emb_output)  # call the run function defined in parent class node2vec
+                super(Entity2Vec, self).run(graph, emb_output)  # call the run function defined in parent class node2vec
+
+            else:
+
+                continue
 
     @staticmethod
     def parse_args():
