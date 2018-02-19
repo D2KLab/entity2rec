@@ -4,7 +4,7 @@ from metrics import precision_at_n, mrr, recall_at_n
 from joblib import Parallel, delayed
 import pyltr
 import numpy as np
-from random import shuffle
+from numpy.random import shuffle
 from sklearn import preprocessing
 
 
