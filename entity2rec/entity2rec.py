@@ -50,7 +50,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         Entity2Vec.__init__(self, is_directed, preprocessing, is_weighted, p, q, walk_length, num_walks, dimensions,
                             window_size, workers, iterations, feedback_file)
 
-        Entity2Rel.__init__(self)  # binary format embeddings
+        Entity2Rel.__init__(self)
 
         self.config_file = config
 
@@ -58,7 +58,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.properties = []
 
-        self.define_properties()
+        self._set_properties()
 
         # run entity2vec to create the embeddings
         if run_all:
@@ -87,7 +87,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.social_only = social_only
 
-    def define_properties(self):
+    def _set_properties(self):
 
         with codecs.open(self.config_file, 'r', encoding='utf-8') as config_read:
 
@@ -102,7 +102,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
     def _set_embedding_files(self):
 
         """
-        Sets the list of embedding files
+        Creates the dictionary of embedding files
         """
 
         for prop in self.properties:
