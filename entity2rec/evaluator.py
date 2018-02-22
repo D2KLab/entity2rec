@@ -4,7 +4,8 @@ from metrics import precision_at_n, mrr, recall_at_n
 from joblib import Parallel, delayed
 import pyltr
 import numpy as np
-from numpy.random import shuffle
+import random
+from random import shuffle
 from sklearn import preprocessing
 
 
@@ -150,7 +151,7 @@ class Evaluator(object):
 
             if self.implicit:  # sample negative items randomly
 
-                negative_candidates = list(np.random.choice(unrated_items, num_negative_candidates, replace=False))
+                negative_candidates = list(random.sample(unrated_items, num_negative_candidates))
 
                 candidate_items = negative_candidates + rated_items_train
 
@@ -159,6 +160,10 @@ class Evaluator(object):
                 items_rated_by_user = self.items_rated_by_user_train[user]
 
                 candidate_items = items_rated_by_user
+
+        shuffle(candidate_items)  # relevant and non relevant items are shuffled
+
+        candidate_items = sorted(candidate_items)  # sorting to ensure reproducibility
 
         return candidate_items
 
@@ -185,11 +190,11 @@ class Evaluator(object):
 
         if n_users:  # select a sub-sample of users
 
-            users_list = list(self.items_rated_by_user_train.keys())[0:n_users]
+            users_list = list(sorted(self.items_rated_by_user_train.keys()))[0:n_users]
 
         else:  # select all users
 
-            users_list = list(self.items_rated_by_user_train.keys())
+            users_list = list(sorted(self.items_rated_by_user_train.keys()))
 
         assert (len(users_list) >= n_jobs), "Number of users cannot be lower than number of workers"
 
@@ -238,6 +243,7 @@ class Evaluator(object):
                 x_train, y_train, qids_train = None, None, None
 
             print('Compute features for testing')
+            
             x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
 
             x_test = preprocessing.scale(x_test)
@@ -279,8 +285,6 @@ class Evaluator(object):
             user_id = int(user.strip('user'))
 
             candidate_items = self.get_candidates(user, data)
-
-            shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
             for item in candidate_items:
 

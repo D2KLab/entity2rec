@@ -2,9 +2,9 @@ from entity2rec import Entity2Rec
 from evaluator import Evaluator
 import time
 from parse_args import parse_args
-import numpy as np
+import random
 
-np.random.seed(1)  # fixed seed for reproducibility
+random.seed(1)  # fixed seed for reproducibility
 
 start_time = time.time()
 
