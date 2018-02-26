@@ -157,8 +157,6 @@ class Evaluator(object):
 
                 negative_candidates = list(random.sample(unrated_items, num_negative_candidates))
 
-                print(negative_candidates)
-
                 candidate_items = negative_candidates + rated_items_train
 
             else:  # use positive and negative feedback from the training set
