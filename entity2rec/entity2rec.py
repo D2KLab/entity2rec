@@ -5,6 +5,7 @@ import numpy as np
 from entity2vec import Entity2Vec
 from entity2rel import Entity2Rel
 import pyltr
+import random
 import sys
 sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
@@ -251,7 +252,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
             learning_rate=lr,
             max_depth=max_depth,
             max_features=max_features,
-            verbose=1
+            verbose=1,
+            random_state=1
         )
 
         # Only needed if you want to perform validation (early stopping & trimming)

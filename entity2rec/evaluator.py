@@ -1,10 +1,10 @@
+import random
 import codecs
 import collections
 from metrics import precision_at_n, mrr, recall_at_n
 from joblib import Parallel, delayed
 import pyltr
 import numpy as np
-import random
 from random import shuffle
 from sklearn import preprocessing
 
@@ -138,10 +138,14 @@ class Evaluator(object):
 
     def get_candidates(self, user, data, num_negative_candidates=100):
 
+        random.seed(1)
+
         rated_items_train = self.items_rated_by_user_train[user]
 
         unrated_items = [item for item in self.all_items if
                                item not in rated_items_train]
+
+        unrated_items = sorted(unrated_items)
 
         if self.all_unrated_items and data != 'train':
 
@@ -152,6 +156,8 @@ class Evaluator(object):
             if self.implicit:  # sample negative items randomly
 
                 negative_candidates = list(random.sample(unrated_items, num_negative_candidates))
+
+                print(negative_candidates)
 
                 candidate_items = negative_candidates + rated_items_train
 
@@ -243,7 +249,7 @@ class Evaluator(object):
                 x_train, y_train, qids_train = None, None, None
 
             print('Compute features for testing')
-            
+
             x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
 
             x_test = preprocessing.scale(x_test)
@@ -354,3 +360,18 @@ class Evaluator(object):
 
             if name != 'fit':
                 print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_max)))
+
+    @staticmethod
+    def write_features_to_file(data, qids, x, y):
+
+        with open('%s.svm' % data, 'w') as feature_file:
+
+            for i, x_data in enumerate(x):
+
+                feature_file.write('%d,' % qids[i])
+
+                for j, f in enumerate(x_data):
+
+                    feature_file.write('%f,' % f)
+
+                feature_file.write('%f\n' % y[i])

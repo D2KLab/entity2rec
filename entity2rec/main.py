@@ -1,8 +1,8 @@
+import random
 from entity2rec import Entity2Rec
 from evaluator import Evaluator
 import time
 from parse_args import parse_args
-import random
 
 random.seed(1)  # fixed seed for reproducibility
 
@@ -53,12 +53,10 @@ evaluat.evaluate_heuristics(x_test, y_test, qids_test)  # evaluates the heuristi
 
 print("--- %s seconds ---" % (time.time() - start_time))
 
-with open('features.svm', 'w') as feature_file:
+if args.write_features:
 
-    for i, x_train in enumerate(x_train):
+    evaluat.write_features_to_file('train', qids_train, x_train, y_train)
 
-        for j, f in enumerate(x_train):
+    evaluat.write_features_to_file('val', qids_val, x_val, y_val)
 
-            feature_file.write('%f,' % f)
-
-        feature_file.write('%f\n' % y_train[i])
+    evaluat.write_features_to_file('test', qids_test, x_test, y_test)
