@@ -27,11 +27,11 @@ p_v = [4]
 
 q_v = [1]
 
-c_v = [30]
+c_v = [40]
 
 walks_v = [50, 75]
 
-length_v = [50, 100]
+length_v = [100, 120]
 
 scores = {}
 
@@ -48,9 +48,9 @@ for d in d_v:
                     for length in length_v:
 
                         # run node2vec to generate the embedding
-                        e2rec = Entity2Rec(args.dataset, run_all=True, p=args.p, q=args.q,
-                                           feedback_file=args.feedback_file, walk_length=args.walk_length,
-                                           num_walks=args.num_walks, dimensions=args.dimensions, window_size=args.window_size,
+                        e2rec = Entity2Rec(args.dataset, run_all=True, p=p, q=q,
+                                           feedback_file=args.feedback_file, walk_length=length,
+                                           num_walks=walks, dimensions=dimensions, window_size=c,
                                            workers=args.workers, iterations=args.iter, collab_only=args.collab_only,
                                            content_only=args.content_only)
 
@@ -68,7 +68,7 @@ for d in d_v:
                         # fit e2rec on features
                         e2rec.fit(x_train, y_train, qids_train,
                                   x_val=x_val, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N)  # train the model
-                        
+
                         print('Finished computing features after %s seconds' % (time.time() - start_time))
 
                         print('p:%.2f,q:%.2f,c:%d,d:%d,walks:%d,length:%d,\n' % (p, q, c, d, walks, length))
