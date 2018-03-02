@@ -50,7 +50,7 @@ for d in d_v:
                         # run node2vec to generate the embedding
                         e2rec = Entity2Rec(args.dataset, run_all=True, p=p, q=q,
                                            feedback_file=args.feedback_file, walk_length=length,
-                                           num_walks=walks, dimensions=dimensions, window_size=c,
+                                           num_walks=walks, dimensions=d, window_size=c,
                                            workers=args.workers, iterations=args.iter, collab_only=args.collab_only,
                                            content_only=args.content_only)
 
