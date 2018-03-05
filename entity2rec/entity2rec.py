@@ -2,10 +2,10 @@ from __future__ import print_function
 import codecs
 import json
 import numpy as np
+import joblib
 from entity2vec import Entity2Vec
 from entity2rel import Entity2Rel
 import pyltr
-import random
 import sys
 sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
@@ -272,5 +272,35 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
     def predict(self, x_test):
 
         return self.model.predict(x_test)
+
+    def save_model(self, model_file):
+
+        if not self.model:
+
+            joblib.dump(self.model, model_file)
+
+        else:
+
+            raise AttributeError('Fit the model before saving it')
+
+    def load_model(self, model_file):
+
+        self.model = joblib.load(model_file)
+
+    def recommend(self, user, qids_test, x_test, candidates, N=10):
+
+        features_indeces = np.where(qids_test == user)
+
+        features = x_test[features_indeces]
+
+        preds = self.model.predict(features)
+
+        items = np.lexsort(candidates, preds)[:N]
+
+        return items
+
+
+
+
 
 

@@ -46,7 +46,7 @@ class MostPop(object):
 
         self.model = True
 
-    def compute_user_item_features(self, user, item, items_liked_by_user):
+    def compute_user_item_features(self, user, item, items_liked_by_user, users_liking_the_item):
 
         try:
 

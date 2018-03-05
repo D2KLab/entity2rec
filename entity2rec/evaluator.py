@@ -366,10 +366,18 @@ class Evaluator(object):
 
             for i, x_data in enumerate(x):
 
-                feature_file.write('%d,' % qids[i])
+                rel = y[i]
+
+                feature_file.write('%d qid:%d ' % (rel, qids[i]))
+
+                length = len(x_data)
 
                 for j, f in enumerate(x_data):
 
-                    feature_file.write('%f,' % f)
+                    if j < length - 1:
 
-                feature_file.write('%f\n' % y[i])
+                        feature_file.write('%d:%f ' % (j+1, f))
+
+                    else:
+
+                        feature_file.write('%d:%f # comment\n' % (j+1, f))
