@@ -7,7 +7,7 @@ import pyltr
 import numpy as np
 from random import shuffle
 from sklearn import preprocessing
-
+from sklearn.preprocessing import Normalizer
 
 def parse_line(line):
 
@@ -213,19 +213,13 @@ class Evaluator(object):
             print('Compute features for testing')
             x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
 
-            x_test = preprocessing.scale(x_test)
-
             if supervised:
 
                 print('Compute features for training')
                 x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
 
-                x_train = preprocessing.scale(x_train)
-
                 print('Compute features for validation')
                 x_val, y_val, qids_val = self._compute_features_parallel('val', recommender, users_list_chunks, n_jobs)
-
-                x_val = preprocessing.scale(x_val)
 
             else:
 
@@ -240,8 +234,6 @@ class Evaluator(object):
                 print('Compute features for training')
                 x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
 
-                x_train = preprocessing.scale(x_train)
-
             else:
 
                 x_train, y_train, qids_train = None, None, None
@@ -249,8 +241,6 @@ class Evaluator(object):
             print('Compute features for testing')
 
             x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
-
-            x_test = preprocessing.scale(x_test)
 
             x_val, y_val, qids_val = None, None, None
 
