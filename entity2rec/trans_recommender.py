@@ -30,6 +30,22 @@ class TransRecommender(object):
 
             self.norm_feedback = np.array(self.norm_matrix[index]).reshape((100,))
 
+        if method == "TransR":
+
+            # matrix containing rel*size*size elements
+
+            self.M = self._parse_emb_file('datasets/%s/KB2E/%s/A.bern' % (self.dataset, method))
+
+            index_feedback = [i for i in self.relation2id.keys() if self.relation2id[i] == 'feedback'][0]
+
+            data = self.M
+
+            size_emb = 100
+
+            data = data[index_feedback*size_emb:index_feedback*size_emb+size_emb, :]
+
+            self.M = data
+
     @staticmethod
     def _parse_ind_file(file):
 
@@ -95,15 +111,19 @@ class TransRecommender(object):
 
             # project user on feedback relation
 
-            emb_user_project = emb_user - np.dot(np.dot(self.norm_feedback.T, emb_user), self.norm_feedback)
+            emb_user = emb_user - np.dot(np.dot(self.norm_feedback.T, emb_user), self.norm_feedback)
 
-            emb_item_project = emb_item - np.dot(np.dot(self.norm_feedback.T, emb_item), self.norm_feedback)
+            emb_item = emb_item - np.dot(np.dot(self.norm_feedback.T, emb_item), self.norm_feedback)
 
-            features = [-euclidean(emb_user_project + emb_feedback, emb_item_project)]
+        elif self.method == "TransR":
 
-        else:   # TransE
+            # project user and item in relation space
 
-            features = [-euclidean(emb_user + emb_feedback, emb_item)]
+            emb_user = np.matmul(emb_user, self.M)
+
+            emb_item = np.matmul(emb_item, self.M)
+
+        features = [-euclidean(emb_user + emb_feedback, emb_item)]
 
         return features
 
@@ -129,7 +149,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     # initialize trans recommender
-    trans_rec = TransRecommender(args.dataset, method="TransH")
+    trans_rec = TransRecommender(args.dataset, method="TransR")
 
     # initialize evaluator
 
