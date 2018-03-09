@@ -6,7 +6,6 @@ from joblib import Parallel, delayed
 import pyltr
 import numpy as np
 from random import shuffle
-from sklearn import preprocessing
 
 
 def parse_line(line):
@@ -44,6 +43,8 @@ class Evaluator(object):
         self.metrics = {}  # defines the metrics to be evaluated
 
         self.feedback = {}  # save users feedback in a dictionary for train, val and test
+
+        self.all_items = None  # all items
 
     def _parse_data(self, training, test, validation=None):
 
@@ -120,11 +121,7 @@ class Evaluator(object):
 
                 self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
 
-        self._define_metrics()
-
-    def _define_metrics(self):
-
-        M = len(self.all_items)
+    def _define_metrics(self, M):
 
         self.metrics = {
             'P@5': precision_at_n.PrecisionAtN(k=5),  # P@5
@@ -211,50 +208,47 @@ class Evaluator(object):
         if validation:
 
             print('Compute features for testing')
-            x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
-
-            x_test = preprocessing.scale(x_test)
+            x_test, y_test, qids_test, items_test = self._compute_features_parallel('test', recommender,
+                                                                                    users_list_chunks, n_jobs)
 
             if supervised:
 
                 print('Compute features for training')
-                x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
-
-                x_train = preprocessing.scale(x_train)
+                x_train, y_train, qids_train, items_train = self._compute_features_parallel('train', recommender,
+                                                                                            users_list_chunks, n_jobs)
 
                 print('Compute features for validation')
-                x_val, y_val, qids_val = self._compute_features_parallel('val', recommender, users_list_chunks, n_jobs)
-
-                x_val = preprocessing.scale(x_val)
+                x_val, y_val, qids_val, items_val = self._compute_features_parallel('val', recommender,
+                                                                                    users_list_chunks, n_jobs)
 
             else:
 
-                x_train, y_train, qids_train = None, None, None
+                x_train, y_train, qids_train, items_train = None, None, None, None
 
-                x_val, y_val, qids_val = None, None, None
+                x_val, y_val, qids_val, items_val = None, None, None, None
 
         else:
 
             if supervised:
 
                 print('Compute features for training')
-                x_train, y_train, qids_train = self._compute_features_parallel('train', recommender, users_list_chunks, n_jobs)
-
-                x_train = preprocessing.scale(x_train)
+                x_train, y_train, qids_train, items_train = self._compute_features_parallel('train', recommender,
+                                                                                            users_list_chunks, n_jobs)
 
             else:
 
-                x_train, y_train, qids_train = None, None, None
+                x_train, y_train, qids_train, items_train = None, None, None, None
 
             print('Compute features for testing')
 
-            x_test, y_test, qids_test = self._compute_features_parallel('test', recommender, users_list_chunks, n_jobs)
+            x_test, y_test, qids_test, items_test = self._compute_features_parallel('test', recommender,
+                                                                                    users_list_chunks, n_jobs)
 
-            x_test = preprocessing.scale(x_test)
+            x_val, y_val, qids_val, items_val = None, None, None, None
 
-            x_val, y_val, qids_val = None, None, None
-
-        return x_train, y_train, qids_train, x_test, y_test, qids_test, x_val, y_val, qids_val
+        return x_train, y_train, qids_train, items_train,\
+               x_test, y_test, qids_test, items_test,\
+               x_val, y_val, qids_val, items_val
 
     def _compute_features_parallel(self, data, recommender, users_list_chunks, n_jobs):
 
@@ -268,19 +262,24 @@ class Evaluator(object):
 
         qids_chunks = [user_item_features[i][2] for i in range(n_jobs)]
 
+        items_chunks = [user_item_features[i][3] for i in range(n_jobs)]
+
         x = np.concatenate(x_chunks, axis=0)
 
         y = np.concatenate(y_chunks, axis=0)
 
         qids = np.concatenate(qids_chunks, axis=0)
 
-        return x, y, qids
+        items = np.concatenate(items_chunks, axis=0)
+
+        return x, y, qids, items
 
     def _compute_features(self, data, recommender, users_list):
 
         TX = []
         Ty = []
         Tqids = []
+        Titems = []
 
         for user in users_list:
 
@@ -306,9 +305,21 @@ class Evaluator(object):
 
                 Tqids.append(user_id)
 
-        return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids)
+                Titems.append(item)
 
-    def evaluate(self, recommender, x_test, y_test, qids_test, verbose=True):
+        return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids), np.asarray(Titems)
+
+    def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True):
+
+        if not self.all_items:  # reading the features from file
+
+            M = len(list(set(items_test)))
+
+        else:
+
+            M = len(self.all_items)
+
+        self._define_metrics(M)
 
         scores = []
 
@@ -360,13 +371,38 @@ class Evaluator(object):
                 print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_max)))
 
     @staticmethod
-    def write_features_to_file(data, qids, x, y):
+    def read_features(train, test, val=None):
+
+        with open(train) as train_file:
+
+            x_train, y_train, qids_train, items_train = pyltr.data.letor.read_dataset(train_file)
+
+        with open(test) as test_file:
+
+            x_test, y_test, qids_test, items_test = pyltr.data.letor.read_dataset(test_file)
+
+        x_val, y_val, qids_val, items_val = None, None, None, None
+
+        if val:
+
+            with open(val) as val_file:
+
+                x_val, y_val, qids_val, items_val = pyltr.data.letor.read_dataset(val_file)
+
+        return x_train, y_train, qids_train, items_train,\
+               x_test, y_test, qids_test, items_test,\
+               x_val, y_val, qids_val, items_val
+
+    @staticmethod
+    def write_features_to_file(data, qids, x, y, items):
 
         with open('%s.svm' % data, 'w') as feature_file:
 
             for i, x_data in enumerate(x):
 
                 rel = y[i]
+
+                item = items[i]
 
                 feature_file.write('%d qid:%d ' % (rel, qids[i]))
 
@@ -380,4 +416,4 @@ class Evaluator(object):
 
                     else:
 
-                        feature_file.write('%d:%f # comment\n' % (j+1, f))
+                        feature_file.write('%d:%f # %s\n' % (j+1, f, item))
