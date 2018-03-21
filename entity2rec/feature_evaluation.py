@@ -33,11 +33,22 @@ e2rec = Entity2Rec(args.dataset, run_all=args.run_all, p=args.p, q=args.q,
 evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
 # compute e2rec features
-x_train, y_train, qids_train, x_test, y_test, qids_test,\
-x_val, y_val, qids_val = evaluat.features(e2rec, args.train, args.test,
+x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
+    x_val, y_val, qids_val, items_val = evaluat.features(e2rec, args.train, args.test,
                                           validation=args.validation, n_users=args.num_users, n_jobs=args.workers)
 
 print('Finished computing features after %s seconds' % (time.time() - start_time))
+
+if args.write_features:
+    print('writing features to file...')
+    evaluat.write_features_to_file('train', qids_train, x_train, y_train, items_train)
+
+    evaluat.write_features_to_file('test', qids_test, x_test, y_test, items_test)
+
+    if args.validation:
+
+        evaluat.write_features_to_file('val', qids_val, x_val, y_val, items_val)
+
 print('Starting to fit the model...')
 
 with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), 'w') as feature_eval_file:
@@ -49,7 +60,7 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
     e2rec.fit(x_train, y_train, qids_train,
               x_val=x_val, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N)  # train the model
 
-    scores = evaluat.evaluate(e2rec, x_test, y_test, qids_test,
+    scores = evaluat.evaluate(e2rec, x_test, y_test, qids_test, items_test,
                               verbose=False)  # evaluates the recommender on the test set
 
     for _, score in scores[0:-1]:
@@ -80,7 +91,7 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
         e2rec.fit(train_feat, y_train, qids_train,
                   x_val=val_feat, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N)  # train the model
 
-        scores = evaluat.evaluate(e2rec, test_feat, y_test, qids_test,
+        scores = evaluat.evaluate(e2rec, test_feat, y_test, qids_test, items_test,
                                   verbose=False)  # evaluates the recommender on the test set
 
         for _, score in scores[0:-1]:
@@ -91,22 +102,23 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
 
         feature_eval_file.flush()
 
-    no_social_properties_indexes = []
+    """
+    #no_social_properties_indexes = []
 
-    for i, prop in enumerate(e2rec.properties):
+    #for i, prop in enumerate(e2rec.properties):
 
-        if prop.typology == "social":
-            continue
+    #    if prop.typology == "social":
+    #        continue
 
-        else:
-            no_social_properties_indexes.append(i)
+    #    else:
+    #        no_social_properties_indexes.append(i)
 
-    print("no social properties")
+    #print("no social properties")
 
-    feature_eval_file.write('no_social,')
+    #feature_eval_file.write('no_social,')
 
     # fit e2rec on one feature at the time
-
+    
     train_feat = x_train[:, no_social_properties_indexes]
     train_feat = train_feat.reshape((-1, len(no_social_properties_indexes)))
 
@@ -128,5 +140,5 @@ with open('feature_evaluation_%s_p%d_q%d.csv' %(args.dataset, args.p, args.q), '
     feature_eval_file.write('%f\n' % scores[-1][1])
 
     feature_eval_file.flush()
-
+    """
 
