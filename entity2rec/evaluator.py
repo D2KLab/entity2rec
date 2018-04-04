@@ -184,20 +184,13 @@ class Evaluator(object):
 
         return relevance
 
-    def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4, supervised=True):
+    def features(self, recommender, training, test, validation=None, n_users=False, n_jobs=4,
+                 supervised=True, max_n_feedback=False):
 
         # reads .dat format
         self._parse_data(training, test, validation=validation)
 
-        if n_users:  # select a sub-sample of users
-
-            users_list = list(sorted(self.items_rated_by_user_train.keys()))[0:n_users]
-
-        else:  # select all users
-
-            users_list = list(sorted(self.items_rated_by_user_train.keys()))
-
-        assert (len(users_list) >= n_jobs), "Number of users cannot be lower than number of workers"
+        users_list = self._define_user_list(n_users, max_n_feedback, n_jobs)
 
         def chunkify(lst, n):
 
@@ -417,3 +410,53 @@ class Evaluator(object):
                     else:
 
                         feature_file.write('%d:%f # %s\n' % (j+1, f, item))
+
+    def write_candidates(self,training, test, users_folder, candidates_folder, data='test', validation=None):
+
+        # reads dat format
+        self._parse_data(training, test, validation=validation)
+
+        users_list = list(sorted(self.items_rated_by_user_train.keys()))
+
+        for user in users_list:
+
+            print(user)
+
+            user_id = int(user.strip('user'))
+
+            with open('%s/%s.txt' %(users_folder, user), 'w') as user_file:
+
+                user_file.write('%s\n' %user)
+
+                with open('%s/candidates_%s.txt' %(candidates_folder, user),'w') as candidates_file:
+
+                    candidate_items = self.get_candidates(user, data)
+
+                    for item in candidate_items:
+
+                        candidates_file.write('%s\n' %item)
+
+    def _define_user_list(self, n_users, max_n_feedback, n_jobs):
+
+        if max_n_feedback:
+
+            users_list = [user for user in self.items_rated_by_user_train.keys()
+                          if len(self.items_liked_by_user_dict[user]) <= max_n_feedback]
+
+            users_list = sorted(users_list)
+
+        else:
+
+            users_list = list(sorted(self.items_rated_by_user_train.keys()))
+
+        if n_users:  # select a sub-sample of users
+
+            users_list = users_list[0:n_users]
+
+        else:  # select all users
+
+            pass
+
+        assert (len(users_list) >= n_jobs), "Number of users cannot be lower than number of workers"
+
+        return users_list
