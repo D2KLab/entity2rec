@@ -21,8 +21,8 @@ if not args.validation:
 
 evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
-users_folder = 'benchmarks/MyMediaLite-3.11/users'
+users_folder = 'benchmarks/MyMediaLite-3.11/users/%s' %args.dataset
 
-candidates_folder = 'benchmarks/MyMediaLite-3.11/candidates'
+candidates_folder = 'benchmarks/MyMediaLite-3.11/candidates/%s' %args.dataset
 
-evaluat.write_candidates(args.train,args.test, users_folder, candidates_folder, validation=args.validation)
+evaluat.write_candidates(args.train, args.test, users_folder, candidates_folder, validation=args.validation)
