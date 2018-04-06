@@ -83,10 +83,10 @@ def parse_args():
     parser.add_argument('--read_features', dest='read_features', action='store_true', default=False,
                         help='Reads the features from a file')
 
-    parser.add_argument('--metric', dest='metric', default='AP',
+    parser.add_argument('--metric', dest='metric', default='NDCG',
                         help='Metric to optimize in the training')
 
-    parser.add_argument('--N', dest='N', type=int, default=10,
+    parser.add_argument('--N', dest='N', type=int, default=None,
                         help='Cutoff to estimate metric')
 
     parser.add_argument('--threshold', dest='threshold', default=4, type=int,

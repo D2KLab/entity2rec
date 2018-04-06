@@ -1,6 +1,8 @@
 import random
 import codecs
 import collections
+import sys
+sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
 from joblib import Parallel, delayed
 import pyltr
@@ -377,9 +379,14 @@ class Evaluator(object):
 
             x_train, y_train, qids_train, items_train = pyltr.data.letor.read_dataset(train_file)
 
+        print('finished reading train')
+
         with open(test) as test_file:
 
             x_test, y_test, qids_test, items_test = pyltr.data.letor.read_dataset(test_file)
+
+        print('finished reading test')
+
 
         x_val, y_val, qids_val, items_val = None, None, None, None
 
@@ -388,6 +395,9 @@ class Evaluator(object):
             with open(val) as val_file:
 
                 x_val, y_val, qids_val, items_val = pyltr.data.letor.read_dataset(val_file)
+
+            print('finished reading val')
+
 
         return x_train, y_train, qids_train, items_train,\
                x_test, y_test, qids_test, items_test,\
