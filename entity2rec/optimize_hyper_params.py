@@ -16,22 +16,22 @@ if not args.train:
     args.train = 'datasets/'+args.dataset+'/train.dat'
 
 if not args.test:
-    args.test = 'datasets/'+args.dataset+'/test.dat'
+    args.test = 'datasets/'+args.dataset+'/val.dat'
 
 if not args.validation:
     args.validation = 'datasets/'+args.dataset+'/val.dat'
 
 d_v = [200]
 
-p_v = [4]
+p_v = [1, 4]
 
-q_v = [1]
+q_v = [1, 4]
 
-c_v = [40]
+c_v = [10]
 
-walks_v = [50, 75]
+walks_v = [50]
 
-length_v = [100, 120]
+length_v = [50, 100]
 
 scores = {}
 
@@ -60,9 +60,10 @@ for d in d_v:
 
 
                         # compute e2rec features
-                        x_train, y_train, qids_train, x_test, y_test, qids_test,\
-                        x_val, y_val, qids_val = evaluat.features(e2rec, args.train, args.test,
-                                                                  validation=args.validation, n_users=args.num_users, n_jobs=args.workers)
+                        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
+                        x_val, y_val, qids_val, items_val = evaluat.features(e2rec, args.train, args.test,
+                                                                             validation=args.validation, n_users=args.num_users,
+                                                                             n_jobs=args.workers, max_n_feedback=args.max_n_feedback)
 
 
                         # fit e2rec on features
@@ -77,7 +78,7 @@ for d in d_v:
 
                         print("--- %s seconds ---" % (time.time() - start_time))
 
-with open('entity2rec_hyper_opt.csv', 'w') as hyper_opt_write:
+with open('entity2rec_hyper_opt_%s.csv' %args.dataset, 'w') as hyper_opt_write:
 
     hyper_opt_write.write('p,q,c,d,walks,length,P@5,P@10,MAP,R@5,R@10,NDCG,MRR\n')
 
