@@ -60,7 +60,7 @@ for d in d_v:
 
 
                         # compute e2rec features
-                        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
+s                       x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
                         x_val, y_val, qids_val, items_val = evaluat.features(e2rec, args.train, args.test,
                                                                              validation=args.validation, n_users=args.num_users,
                                                                              n_jobs=args.workers, max_n_feedback=args.max_n_feedback)
@@ -74,7 +74,7 @@ for d in d_v:
 
                         print('p:%.2f,q:%.2f,c:%d,d:%d,walks:%d,length:%d,\n' % (p, q, c, d, walks, length))
 
-                        scores[(p, q, c, d, walks, length)] = evaluat.evaluate(e2rec, x_test, y_test, qids_test)  # evaluates the recommender on the test set
+                        scores[(p, q, c, d, walks, length)] = evaluat.evaluate(e2rec, x_test, y_test, qids_test, items_test)  # evaluates the recommender on the test set
 
                         print("--- %s seconds ---" % (time.time() - start_time))
 
