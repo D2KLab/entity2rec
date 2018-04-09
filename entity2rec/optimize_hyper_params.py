@@ -60,7 +60,7 @@ for d in d_v:
 
 
                         # compute e2rec features
-s                       x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
+                        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
                         x_val, y_val, qids_val, items_val = evaluat.features(e2rec, args.train, args.test,
                                                                              validation=args.validation, n_users=args.num_users,
                                                                              n_jobs=args.workers, max_n_feedback=args.max_n_feedback)
