@@ -421,12 +421,26 @@ class Evaluator(object):
 
                         feature_file.write('%d:%f # %s\n' % (j+1, f, item))
 
-    def write_candidates(self,training, test, users_folder, candidates_folder, data='test', validation=None):
+    def write_candidates(self,training, test, users_folder, candidates_folder, index_file, data='test', validation=None):
 
         # reads dat format
         self._parse_data(training, test, validation=validation)
 
         users_list = list(sorted(self.items_rated_by_user_train.keys()))
+
+        index_dict = {}
+
+        with open(index_file) as index_read:
+
+            for line in index_read:
+
+                line_split = line.strip('\n').split(' ')
+
+                index = line_split[0]
+
+                item = line_split[1]
+
+                index_dict[item] = index
 
         for user in users_list:
 
@@ -438,13 +452,15 @@ class Evaluator(object):
 
                 user_file.write('%s\n' %user)
 
-                with open('%s/candidates_%s.txt' %(candidates_folder, user),'w') as candidates_file:
+                with open('%s/%s.txt' %(candidates_folder, user),'w') as candidates_file:
 
                     candidate_items = self.get_candidates(user, data)
 
                     for item in candidate_items:
 
-                        candidates_file.write('%s\n' %item)
+                        index = index_dict[item]
+
+                        candidates_file.write('%s\n' %index)
 
     def _define_user_list(self, n_users, max_n_feedback, n_jobs):
 
