@@ -320,7 +320,7 @@ class Evaluator(object):
 
         if self.metrics:
 
-            preds = recommender.predict(x_test)
+            preds = recommender.predict(x_test, qids_test)
 
             for name, metric in self.metrics.items():
 

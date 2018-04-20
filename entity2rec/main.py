@@ -4,6 +4,7 @@ from entity2rec import Entity2Rec
 from evaluator import Evaluator
 import time
 from parse_args import parse_args
+from node2vec_recommender import Node2VecRecommender
 
 random.seed(1)  # fixed seed for reproducibility
 
@@ -46,12 +47,22 @@ else:
     x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
     x_val, y_val, qids_val, items_val = evaluat.read_features('train.svm', 'test.svm', val='val.svm')
 
+
 print('Finished computing features after %s seconds' % (time.time() - start_time))
 print('Starting to fit the model...')
 
+# start the clustering of users
+
+n2v_rec = Node2VecRecommender(args.dataset, p=args.p, q=args.q, walk_length=args.walk_length,
+                              num_walks=args.num_walks, dimensions=args.dimensions, 
+                              window_size=args.window_size, iterations=args.iter)
+
+user_to_cluster = n2v_rec.cluster_users(2, evaluat._define_user_list(args.num_users, False, args.workers))
+
+
 # fit e2rec on features
 e2rec.fit(x_train, y_train, qids_train,
-          x_val=x_val, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N)  # train the model
+            x_val=x_val, y_val=y_val, qids_val=qids_val, optimize=args.metric, N=args.N, user_to_cluster=user_to_cluster)  # train the model
 
 print('Finished fitting the model after %s seconds' % (time.time() - start_time))
 

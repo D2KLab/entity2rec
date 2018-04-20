@@ -3,7 +3,7 @@ from gensim.models.keyedvectors import KeyedVectors
 import numpy as np
 from evaluator import Evaluator
 from parse_args import parse_args
-
+from sklearn.cluster import KMeans
 
 class Node2VecRecommender(object):
 
@@ -11,10 +11,10 @@ class Node2VecRecommender(object):
                  num_walks=500, dimensions=500, window_size=10, iterations=5):
 
         self.node2vec_model = KeyedVectors.load_word2vec_format(
-            'emb/%s/feedback/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.emd'
-            % (dataset, num_walks, p, q, walk_length, dimensions, iterations, window_size), binary=True)
+            'datasets/Movielens1M/node2vec/node2vec_recommender_default.emd'
+            , binary=True)
 
-    def compute_user_item_features(self, user, item, items_liked_by_user):
+    def compute_user_item_features(self, user, item, items_liked_by_user, users_liking_the_item):
 
         try:
 
@@ -35,6 +35,28 @@ class Node2VecRecommender(object):
         preds = x_test
 
         return preds
+
+    def cluster_users(self, n_clusters, users):
+
+        user_to_cluster = {}
+
+        X = []
+
+        for user in users:
+
+            X.append(self.node2vec_model[user])
+
+        X = np.asarray(X)
+
+        kmeans = KMeans(n_clusters=n_clusters, random_state=1).fit(X)
+
+        cluster_labels = kmeans.labels_
+
+        for i, user in enumerate(users):
+
+            user_to_cluster[user] = cluster_labels[i]
+
+        return user_to_cluster
 
 
 if __name__ == '__main__':
@@ -68,4 +90,3 @@ if __name__ == '__main__':
     evaluat.evaluate(node2vec_rec, x_test, y_test, qids_test)  # evaluates the recommender on the test set
 
     print("--- %s seconds ---" % (time.time() - start_time))
-

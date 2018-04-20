@@ -9,6 +9,7 @@ import pyltr
 import sys
 sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
+from collections import defaultdict
 
 
 class Property:
@@ -78,7 +79,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         self._set_embedding_files()
 
         # initialize model to None
-        self.model = None
+        self.model = None 
 
         # whether using only collab or content features
 
@@ -87,6 +88,10 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         self.content_only = content_only
 
         self.social_only = social_only
+
+        # initialize cluster models
+
+        self.models = {}
 
     def _set_properties(self):
 
@@ -222,7 +227,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
     def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None,
             optimize='AP', N=10, lr=0.1, n_estimators=100, max_depth=3,
-            max_features=None):
+            max_features=None, user_to_cluster=None):
 
         # choose the metric to optimize during the fit process
 
@@ -246,32 +251,123 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             raise ValueError('Metric not implemented')
 
-        self.model = pyltr.models.LambdaMART(
-            metric=fit_metric,
-            n_estimators=n_estimators,
-            learning_rate=lr,
-            max_depth=max_depth,
-            max_features=max_features,
-            verbose=1,
-            random_state=1
-        )
+        if user_to_cluster:
 
-        # Only needed if you want to perform validation (early stopping & trimming)
+            self.models = {}
 
-        if x_val is not None and y_val is not None and qids_val is not None:
+            self.user_to_cluster = user_to_cluster
 
-            monitor = pyltr.models.monitors.ValidationMonitor(
-                x_val, y_val, qids_val, metric=fit_metric)
+            # map cluster id to users ids of the cluster
+            cluster_to_users = defaultdict(list)
 
-            self.model.fit(x_train, y_train, qids_train, monitor=monitor)
+            for user, cluster in user_to_cluster.items():
+
+                cluster_to_users[cluster].append(user)
+
+            # iterate through cluster ids
+            for user_cluster in self.user_to_cluster.values():
+
+                x_train_c, y_train_c, qids_train_c, x_val_c, y_val_c, qids_val_c = [],[],[],[],[],[]
+                for i, qid in enumerate(qids_train):
+
+                    if str(qid) in cluster_to_users[user_cluster]:
+
+                        x_train_c.append(x_train[i])
+                        y_train_c.append(y_train[i])
+                        qids_train_c.append(qid)
+
+                        x_val_c.append(x_val[i])
+                        y_val_c.append(y_val[i])
+                        qids_val_c.append(qids_val[i])
+
+                """
+                print(x_train_c)
+
+                x_train_c = np.asarray(x_train_c).reshape(())
+                y_train_c = np.asarray(y_train_c)
+                qids_train_c = np.asarray(qids_train_c)
+                items_train_c = np.asarray(items_train_c)
+
+                x_val_c = np.asarray(x_val_c)
+                y_val_c = np.asarray(y_val_c)
+                qids_val_c = np.asarray(qids_val_c)
+                items_val_c = np.asarray(items_val_c)
+                """
+
+                model = pyltr.models.LambdaMART(
+                    metric=fit_metric,
+                    n_estimators=n_estimators,
+                    learning_rate=lr,
+                    max_depth=max_depth,
+                    max_features=max_features,
+                    verbose=1,
+                    random_state=1)
+                    
+                # Only needed if you want to perform validation (early stopping & trimming)
+
+                if x_val is not None and y_val is not None and qids_val is not None:
+
+                    monitor = pyltr.models.monitors.ValidationMonitor(
+                        x_val_c, y_val_c, qids_val_c, metric=fit_metric)
+
+                    model.fit(x_train_c, y_train_c, qids_train_c, monitor=monitor)
+
+                else:
+
+                    model.fit(x_train_c, y_train_c, qids_train_c)
+
+                self.models[user_cluster] = model
 
         else:
 
-            self.model.fit(x_train, y_train, qids_train)
+            self.model = pyltr.models.LambdaMART(
+                metric=fit_metric,
+                n_estimators=n_estimators,
+                learning_rate=lr,
+                max_depth=max_depth,
+                max_features=max_features,
+                verbose=1,
+                random_state=1
+            )
 
-    def predict(self, x_test):
+            # Only needed if you want to perform validation (early stopping & trimming)
 
-        return self.model.predict(x_test)
+            if x_val is not None and y_val is not None and qids_val is not None:
+
+                monitor = pyltr.models.monitors.ValidationMonitor(
+                    x_val, y_val, qids_val, metric=fit_metric)
+
+                self.model.fit(x_train, y_train, qids_train, monitor=monitor)
+
+            else:
+
+                self.model.fit(x_train, y_train, qids_train)
+
+
+    def predict(self, x_test, qids_test):
+
+        if self.user_to_cluster:
+            
+            preds = []
+            
+            for i, line in enumerate(x_test):
+
+                qid = str(qids_test[i])
+
+                cluster = self.user_to_cluster[qid]
+
+                print(cluster)
+
+                # retrieve the corresponding model of that cluster
+                model = self.models[cluster]
+
+                preds.append(model.predict(line.reshape(1, -1)))
+
+            return preds
+
+        else:
+
+            return self.model.predict(x_test)
 
     def save_model(self, model_file):
 
@@ -298,9 +394,3 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         items = np.lexsort(candidates, preds)[:N]
 
         return items
-
-
-
-
-
-
