@@ -10,6 +10,7 @@ import sys
 sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
 from collections import defaultdict
+from sklearn import preprocessing
 
 
 class Property:
@@ -226,10 +227,13 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         return features
 
     def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None,
-            optimize='AP', N=10, lr=0.1, n_estimators=100, max_depth=3,
+            optimize='NDCG', N=None, lr=0.1, n_estimators=100, max_depth=5,
             max_features=None, user_to_cluster=None):
 
         # choose the metric to optimize during the fit process
+
+        if not N:
+            N = 10**8
 
         if optimize == 'NDCG':
 
@@ -337,12 +341,8 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                 monitor = pyltr.models.monitors.ValidationMonitor(
                     x_val, y_val, qids_val, metric=fit_metric)
 
-                self.model.fit(x_train, y_train, qids_train, monitor=monitor)
-
-            else:
-
-                self.model.fit(x_train, y_train, qids_train)
-
+        print('features')
+        print(self.model.feature_importances_)
 
     def predict(self, x_test, qids_test):
 
