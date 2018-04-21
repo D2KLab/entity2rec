@@ -341,8 +341,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                 monitor = pyltr.models.monitors.ValidationMonitor(
                     x_val, y_val, qids_val, metric=fit_metric)
 
-        print('features')
-        print(self.model.feature_importances_)
 
     def predict(self, x_test, qids_test):
 
@@ -355,8 +353,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                 qid = str(qids_test[i])
 
                 cluster = self.user_to_cluster[qid]
-
-                print(cluster)
 
                 # retrieve the corresponding model of that cluster
                 model = self.models[cluster]

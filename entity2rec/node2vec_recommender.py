@@ -44,6 +44,8 @@ class Node2VecRecommender(object):
 
         for user in users:
 
+            print(user)
+
             X.append(self.node2vec_model[user])
 
         X = np.asarray(X)
