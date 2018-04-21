@@ -11,7 +11,7 @@ class Node2VecRecommender(object):
                  num_walks=500, dimensions=500, window_size=10, iterations=5):
 
         self.node2vec_model = KeyedVectors.load_word2vec_format(
-            'datasets/Movielens1M/node2vec/node2vec_recommender_default.emd'
+            'datasets/Movielens1M/node2vec/node2vec_recommender.emd'
             , binary=True)
 
     def compute_user_item_features(self, user, item, items_liked_by_user, users_liking_the_item):
