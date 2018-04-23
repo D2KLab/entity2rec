@@ -269,7 +269,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
                 cluster_to_users[cluster].append(user)
 
             # iterate through cluster ids
-            for user_cluster in self.user_to_cluster.values():
+            for user_cluster in list(set(self.user_to_cluster.values())):
 
                 x_train_c, y_train_c, qids_train_c, x_val_c, y_val_c, qids_val_c = [],[],[],[],[],[]
                 for i, qid in enumerate(qids_train):
