@@ -46,7 +46,13 @@ class Node2VecRecommender(object):
 
             print(user)
 
-            X.append(self.node2vec_model[user])
+            try:
+
+                X.append(self.node2vec_model[user])
+
+            except KeyError:
+
+                X.append(np.zeros(200))
 
         X = np.asarray(X)
 
