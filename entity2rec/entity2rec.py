@@ -93,6 +93,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         # initialize cluster models
 
         self.models = {}
+        self.user_to_cluster = None
 
     def _set_properties(self):
 
@@ -340,6 +341,12 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 monitor = pyltr.models.monitors.ValidationMonitor(
                     x_val, y_val, qids_val, metric=fit_metric)
+
+                self.model.fit(x_train, y_train, qids_train, monitor=monitor)
+
+            else:
+
+                self.model.fit(x_train, y_train, qids_train)
 
 
     def predict(self, x_test, qids_test):
