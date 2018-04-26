@@ -40,34 +40,4 @@ except:
 
 index_file = 'benchmarks/MyMediaLite-3.11/item_index_%s' %args.dataset
 
-
-def get_item(line):
-    line_split = line.strip('\n').split(' ')
-    return line_split[1]
-
-with open('benchmarks/MyMediaLite-3.11/item_index_%s' %args.dataset, 'w') as index_file_write:
-
-    items = []
-
-    with open(args.train, encoding='utf-8') as train_read:
-        with open(args.validation, encoding='utf-8') as val_read:
-            with open(args.test, encoding='utf-8') as test_read:
-
-                for line in train_read:
-                    items.append(get_item(line))
-
-                for line in val_read:
-                    items.append(get_item(line))
-
-                for line in test_read:
-                    items.append(get_item(line))
-
-    items = list(set(items))
-
-    index_dict = {item:i for i, item in enumerate(items)}
-
-    for i, item in enumerate(items):
-
-        index_file_write.write('%d %s\n' %(i, item))
-
-evaluat.write_candidates(args.train, args.test, users_folder, candidates_folder, index_dict, validation=args.validation)
+evaluat.write_candidates(args.train, args.test, users_folder, candidates_folder, index_file, validation=args.validation)
