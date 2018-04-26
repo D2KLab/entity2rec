@@ -38,6 +38,6 @@ try:
 except:
     pass
 
-index_file = 'benchmarks/MyMediaLite-3.11/item_index_%s' %args.dataset
+index_file = 'benchmarks/MyMediaLite-3.11/item_index_%s.txt' %args.dataset
 
 evaluat.write_candidates(args.train, args.test, users_folder, candidates_folder, index_file, validation=args.validation)
