@@ -8,6 +8,7 @@ from joblib import Parallel, delayed
 import pyltr
 import numpy as np
 from random import shuffle
+from collections import Counter
 
 
 def parse_line(line):
@@ -122,6 +123,17 @@ class Evaluator(object):
                     self.feedback[(u, item, 'val')] = relevance
 
                 self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
+
+        self.pop_items = Counter()
+
+        for user, items in self.items_liked_by_user_dict.items():
+
+            for item in items:
+                self.pop_items[item] += 1
+
+
+        self.top_N_items = sorted(self.pop_items, reverse=True)[0:100]
+        print(self.top_N_items[0:10])
 
     def _define_metrics(self, M):
 
@@ -333,6 +345,25 @@ class Evaluator(object):
                     if verbose:
 
                         print('%s-----%f\n' % (name, score))
+
+            preds_ser, y_test_ser, qids_test_ser = [], [], []
+
+            for i, item in enumerate(items_test):
+
+                if item not in self.top_N_items:
+
+                    preds_ser.append(preds[i])
+                    y_test_ser.append(y_test[i])
+                    qids_test_ser.append(qids_test[i])
+
+            y_test_ser = np.asarray(y_test_ser)
+
+            serend = precision_at_n.PrecisionAtN(k=10).calc_mean(qids_test_ser, y_test_ser, preds_ser)
+
+            scores.append(('ser@10', serend))
+
+            print('ser@10-----%f\n' % (serend))
+
 
         return scores
 
