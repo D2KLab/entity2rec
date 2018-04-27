@@ -2,16 +2,16 @@
 Recall at N
 """
 
-from pyltr.metrics import Metric
+from . import MetricItem
 
 
-class RecallAtN(Metric):
+class RecallAtN(MetricItem):
     def __init__(self, k=10, cutoff=0.5):
         super(RecallAtN, self).__init__()
         self.k = k
         self.cutoff = cutoff
 
-    def evaluate(self, qid, targets):
+    def evaluate(self, qid, targets, items=None):
         n_targets = len(targets)
         num_rel = 0
         total_retrieved = 0.0

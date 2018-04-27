@@ -3,7 +3,7 @@ import codecs
 import collections
 import sys
 sys.path.append('.')
-from metrics import precision_at_n, mrr, recall_at_n
+import metrics
 from joblib import Parallel, delayed
 import pyltr
 import numpy as np
@@ -131,20 +131,21 @@ class Evaluator(object):
             for item in items:
                 self.pop_items[item] += 1
 
-
         self.top_N_items = sorted(self.pop_items, reverse=True)[0:100]
         print(self.top_N_items[0:10])
 
     def _define_metrics(self, M):
 
         self.metrics = {
-            'P@5': precision_at_n.PrecisionAtN(k=5),  # P@5
-            'P@10': precision_at_n.PrecisionAtN(k=10),  # P@10
-            'MAP': pyltr.metrics.AP(k=M),  # MAP
-            'R@5': recall_at_n.RecallAtN(k=5),
-            'R@10': recall_at_n.RecallAtN(k=10),
-            'NDCG': pyltr.metrics.NDCG(k=M, gain_type='identity'),  # NDCG
-            'MRR': mrr.MRR(k=M)  # MRR
+            'P@5': metrics.PrecisionAtN(k=5),  # P@5
+            'P@10': metrics.PrecisionAtN(k=10),  # P@10
+            'MAP': metrics.AP(k=M),  # MAP
+            'R@5': metrics.RecallAtN(k=5),
+            'R@10': metrics.RecallAtN(k=10),
+            'NDCG': metrics.NDCG(k=M, gain_type='identity'),  # NDCG
+            'MRR': metrics.MRR(k=M),  # MRR
+            'SER@5': metrics.Serendipity(self.top_N_items, k=5),  # Serendipity@5
+            'SER@10': metrics.Serendipity(self.top_N_items, k=10)  # Serendipity@10
         }
 
     def get_candidates(self, user, data, num_negative_candidates=100):
@@ -338,7 +339,7 @@ class Evaluator(object):
 
                 if name != 'fit':
 
-                    score = metric.calc_mean(qids_test, y_test, preds)
+                    score = metric.calc_mean(qids_test, y_test, preds, items=items_test)
 
                     scores.append((name, score))
 
@@ -346,28 +347,9 @@ class Evaluator(object):
 
                         print('%s-----%f\n' % (name, score))
 
-            preds_ser, y_test_ser, qids_test_ser = [], [], []
-
-            for i, item in enumerate(items_test):
-
-                if item not in self.top_N_items:
-
-                    preds_ser.append(preds[i])
-                    y_test_ser.append(y_test[i])
-                    qids_test_ser.append(qids_test[i])
-
-            y_test_ser = np.asarray(y_test_ser)
-
-            serend = precision_at_n.PrecisionAtN(k=10).calc_mean(qids_test_ser, y_test_ser, preds_ser)
-
-            scores.append(('ser@10', serend))
-
-            print('ser@10-----%f\n' % (serend))
-
-
         return scores
 
-    def evaluate_heuristics(self, x_test, y_test, qids_test):
+    def evaluate_heuristics(self, x_test, y_test, qids_test, items_test):
 
         preds_average = list(map(lambda x: np.mean(x), x_test))  # average of the relatedness scores
 
@@ -380,21 +362,21 @@ class Evaluator(object):
         for name, metric in self.metrics.items():
 
             if name != 'fit':
-                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_average)))
+                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_average, items=items_test)))
 
         print('Min:')
 
         for name, metric in self.metrics.items():
 
             if name != 'fit':
-                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_min)))
+                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_min, items=items_test)))
 
         print('Max:')
 
         for name, metric in self.metrics.items():
 
             if name != 'fit':
-                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_max)))
+                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_max, items=items_test)))
 
     @staticmethod
     def read_features(train, test, val=None):
