@@ -98,4 +98,7 @@ def parse_args():
     parser.add_argument('--max_n_feedback', dest='max_n_feedback', type=int, default=False,
                         help='Only select users with less than max_n_feedback for training and evaluation')
 
+    parser.add_argument('--user_clusters', dest='user_clusters', type=int, default=False,
+        help='Cluster users and fit several models')
+
     return parser.parse_args()
