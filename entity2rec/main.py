@@ -52,16 +52,21 @@ print('Finished computing features after %s seconds' % (time.time() - start_time
 print('Starting to fit the model...')
 
 # start the clustering of users
+if args.user_clusters:
 
-n2v_rec = Node2VecRecommender(args.dataset, p=args.p, q=args.q, walk_length=args.walk_length,
-                              num_walks=args.num_walks, dimensions=args.dimensions, 
-                              window_size=args.window_size, iterations=args.iter)
+  n2v_rec = Node2VecRecommender(args.dataset, p=args.p, q=args.q, walk_length=args.walk_length,
+                               num_walks=args.num_walks, dimensions=args.dimensions, 
+                               window_size=args.window_size, iterations=args.iter)
 
-user_list = list(map(lambda x: str(x), sorted(list(set(qids_train)))))
-user_to_cluster = n2v_rec.cluster_users(2, user_list)
-#print(evaluat._define_user_list(args.num_users, args.max_n_feedback, args.workers))
-#print()
-#user_to_cluster = n2v_rec.cluster_users(2, evaluat._define_user_list(args.num_users, args.max_n_feedback, args.workers))
+  user_list = list(map(lambda x: str(x), sorted(list(set(qids_train)))))
+  user_to_cluster = n2v_rec.cluster_users(2, user_list)
+
+
+  user_to_cluster = n2v_rec.cluster_users(2, evaluat._define_user_list(args.num_users, args.max_n_feedback, args.workers))
+
+else:
+
+  user_to_cluster = None
 
 # fit e2rec on features
 e2rec.fit(x_train, y_train, qids_train,
