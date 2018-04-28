@@ -145,7 +145,11 @@ class Evaluator(object):
             'NDCG': metrics.NDCG(k=M, gain_type='identity'),  # NDCG
             'MRR': metrics.MRR(k=M),  # MRR
             'SER@5': metrics.Serendipity(self.top_N_items, k=5),  # Serendipity@5
-            'SER@10': metrics.Serendipity(self.top_N_items, k=10)  # Serendipity@10
+            'SER@10': metrics.Serendipity(self.top_N_items, k=10),  # Serendipity@10
+            'NOV@5': metrics.Novelty(self.items_rated_by_user_train, k=5),  # Novelty@5
+            'NOV@10': metrics.Novelty(self.items_rated_by_user_train, k=10),  # Novelty@10
+            'DIV@5': metrics.Diversity(self.items_liked_by_user_dict, k=5),  # Diversity@5
+            'DIV@10': metrics.Diversity(self.items_liked_by_user_dict, k=10)  # Diversity@10
         }
 
     def get_candidates(self, user, data, num_negative_candidates=100):
