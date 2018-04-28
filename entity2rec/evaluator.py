@@ -9,7 +9,7 @@ import pyltr
 import numpy as np
 from random import shuffle
 from collections import Counter
-
+from operator import itemgetter
 
 def parse_line(line):
 
@@ -66,6 +66,8 @@ class Evaluator(object):
 
         self.users_liking_an_item_dict = collections.defaultdict(list)
 
+        self.pop_items = Counter()
+
         with codecs.open(training, 'r', encoding='utf-8') as train:
 
             all_train_items = []
@@ -82,11 +84,15 @@ class Evaluator(object):
 
                     self.items_liked_by_user_dict[u].append(item)
 
+                    self.pop_items[item] += 1
+
                     self.users_liking_an_item_dict[item].append(u)
 
                 elif self.implicit and relevance == 1:
 
                     self.items_liked_by_user_dict[u].append(item)
+
+                    self.pop_items[item] += 1
 
                     self.users_liking_an_item_dict[item].append(u)
 
@@ -124,15 +130,7 @@ class Evaluator(object):
 
                 self.all_items = list(set(self.all_items + val_items))  # merge lists and remove duplicates
 
-        self.pop_items = Counter()
-
-        for user, items in self.items_liked_by_user_dict.items():
-
-            for item in items:
-                self.pop_items[item] += 1
-
-        self.top_N_items = sorted(self.pop_items, reverse=True)[0:100]
-        print(self.top_N_items[0:10])
+        self.top_N_items = [item for item, count in self.pop_items.most_common(100)]
 
     def _define_metrics(self, M):
 
