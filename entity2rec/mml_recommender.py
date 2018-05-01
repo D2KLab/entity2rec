@@ -13,7 +13,7 @@ class MMLRecommender(object):
         #print(self.mml_model[('1366','http://dbpedia.org/resource/The_Winter_Guest')])
 
     def _read_scores(self, file):
- 
+        
         model = {}
 
         with open(file) as file_read:
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     scores = evaluat.evaluate(mml_rec, x_test, y_test, qids_test, items_test, verbose=False)  # evaluates the recommender on the test set
 
-    scores_ = [score for metric, score in scores]
+    scores_ = [np.round(score, decimals=6) for metric, score in scores]
 
     print(scores_)
 

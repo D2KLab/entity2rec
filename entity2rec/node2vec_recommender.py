@@ -30,7 +30,7 @@ class Node2VecRecommender(object):
 
         return 0
 
-    def predict(self, x_test):
+    def predict(self, x_test, qids_test):
 
         preds = x_test
 
@@ -88,13 +88,13 @@ if __name__ == '__main__':
     evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
     # compute e2rec features
-    x_train, y_train, qids_train, x_test, y_test, qids_test, \
-    x_val, y_val, qids_val = evaluat.features(node2vec_rec, args.train, args.test,
+    x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
+    x_val, y_val, qids_val, items_val = evaluat.features(node2vec_rec, args.train, args.test,
                                               validation=False, n_users=args.num_users,
                                               n_jobs=args.workers, supervised=False)
 
     print('Finished computing features after %s seconds' % (time.time() - start_time))
 
-    evaluat.evaluate(node2vec_rec, x_test, y_test, qids_test)  # evaluates the recommender on the test set
+    evaluat.evaluate(node2vec_rec, x_test, y_test, qids_test, items_test)  # evaluates the recommender on the test set
 
     print("--- %s seconds ---" % (time.time() - start_time))
