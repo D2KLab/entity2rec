@@ -100,7 +100,13 @@ if __name__ == '__main__':
 
     # initialize evaluator
 
-    evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
+    if args.dataset == 'LastFM':
+        implicit = True
+
+    else:
+        implicit = args.implicit
+
+    evaluat = Evaluator(implicit=implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
     # compute features
     x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
