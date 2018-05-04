@@ -1,12 +1,12 @@
 import time
 import numpy as np
 from evaluator import Evaluator
-from parse_args import parse_args
 from surprise import SVD, KNNBaseline, NMF, KNNWithMeans
 from surprise import Reader
 from surprise import Dataset
 import os
 import sys
+import argparse
 
 
 class SurpriseRecommender:
@@ -57,6 +57,43 @@ class SurpriseRecommender:
 
         return preds
 
+    def parse_args():
+
+        """
+        Parses the entity2rec arguments.
+        """
+
+        parser = argparse.ArgumentParser(description="")
+
+        parser.add_argument('--workers', type=int, default=8,
+                            help='Number of parallel workers. Default is 8.')
+
+        parser.add_argument('--config_file', nargs='?', default='config/properties.json',
+                            help='Path to configuration file')
+
+        parser.add_argument('--dataset', nargs='?', default='Movielens1M',
+                            help='Dataset')
+
+        parser.add_argument('--train', dest='train', help='train', default=None)
+
+        parser.add_argument('--test', dest='test', help='test', default=None)
+
+        parser.add_argument('--validation', dest='validation', default=None, help='validation')
+
+        parser.add_argument('--implicit', dest='implicit', action='store_true', default=False,
+                            help='Implicit feedback with boolean values')
+
+        parser.add_argument('--all_items', dest='all_unrated_items', action='store_false', default=True,
+                            help='Whether keeping the rated items of the training set as candidates. '
+                                 'Default is AllUnratedItems')
+        
+        parser.add_argument('--threshold', dest='threshold', default=4, type=int,
+                            help='Threshold to convert ratings into binary feedback')
+
+        parser.add_argument('--recommender', dest='recommender', help="which recommender to use")
+
+        return parser.parse_args()
+
 
 if __name__ == '__main__':
 
@@ -64,11 +101,11 @@ if __name__ == '__main__':
 
     start_time = time.time()
 
-    rec = sys.argv[1]
+    args = SurpriseRecommender.parse_args()
+
+    rec = args.recommender
 
     print('Starting %s recommender...' %rec)
-
-    args = parse_args()
 
     if not args.train:
         args.train = 'datasets/'+args.dataset+'/train.dat'
