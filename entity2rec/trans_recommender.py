@@ -148,8 +148,11 @@ if __name__ == '__main__':
 
     args = parse_args()
 
+    import sys
+    method = sys.argv[1]
+
     # initialize trans recommender
-    trans_rec = TransRecommender(args.dataset, method="TransH")
+    trans_rec = TransRecommender(args.dataset, method=method)
 
     # initialize evaluator
 
