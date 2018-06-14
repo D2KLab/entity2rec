@@ -148,22 +148,23 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    import sys
-    method = sys.argv[1]
+    for method in ["TransE", "TransH", "TransR"]:
 
-    # initialize trans recommender
-    trans_rec = TransRecommender(args.dataset, method=method)
+        print(method)
 
-    # initialize evaluator
+        # initialize trans recommender
+        trans_rec = TransRecommender(args.dataset, method=method)
 
-    evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
+        # initialize evaluator
 
-    # compute features
-    x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, x_val, y_val, qids_val, items_val = evaluat.features(trans_rec, args.train, args.test, validation=False, n_users=args.num_users,
-                                              n_jobs=args.workers, supervised=False)
+        evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
-    print('Finished computing features after %s seconds' % (time.time() - start_time))
+        # compute features
+        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, x_val, y_val, qids_val, items_val = evaluat.features(trans_rec, args.train, args.test, validation=False, n_users=args.num_users,
+                                                  n_jobs=args.workers, supervised=False)
 
-    evaluat.evaluate(trans_rec, x_test, y_test, qids_test, items_test)  # evaluates the recommender on the test set
+        print('Finished computing features after %s seconds' % (time.time() - start_time))
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+        evaluat.evaluate(trans_rec, x_test, y_test, qids_test, items_test)  # evaluates the recommender on the test set
+
+        print("--- %s seconds ---" % (time.time() - start_time))
