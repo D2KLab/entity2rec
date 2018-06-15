@@ -10,9 +10,7 @@ import argparse
 
 
 class SurpriseRecommender:
-
     def __init__(self, algorithm, dataset, train):
-
         self.algorithm = algorithm
 
         self.train = train
@@ -26,7 +24,6 @@ class SurpriseRecommender:
         self.model = self._learn_model_surprise()
 
     def _learn_model_surprise(self):
-
         file_path = os.path.expanduser(self.train)
 
         reader = Reader(line_format='user item rating timestamp', sep=' ')
@@ -42,23 +39,19 @@ class SurpriseRecommender:
         return algo
 
     def compute_user_item_features(self, user, item, items_liked_by_user, users_liking_the_item):
-
         features = [self.model.predict(user, item)[3]]
 
         return features
 
     def fit(self, x_train, y_train, qids_train):
-
         return 0
 
     def predict(self, x_test, qids_test):
-
         preds = x_test
 
         return preds
 
     def parse_args():
-
         """
         Parses the entity2rec arguments.
         """
@@ -86,7 +79,7 @@ class SurpriseRecommender:
         parser.add_argument('--all_items', dest='all_unrated_items', action='store_false', default=True,
                             help='Whether keeping the rated items of the training set as candidates. '
                                  'Default is AllUnratedItems')
-        
+
         parser.add_argument('--threshold', dest='threshold', default=4, type=int,
                             help='Threshold to convert ratings into binary feedback')
 
@@ -105,35 +98,37 @@ if __name__ == '__main__':
 
     rec = args.recommender
 
-    print('Starting %s recommender...' %rec)
+    print('Starting surprise recommender...')
 
     if not args.train:
-        args.train = 'datasets/'+args.dataset+'/train.dat'
+        args.train = 'datasets/' + args.dataset + '/train.dat'
 
     if not args.test:
-        args.test = 'datasets/'+args.dataset+'/test.dat'
+        args.test = 'datasets/' + args.dataset + '/test.dat'
 
     if not args.validation:
-        args.validation = 'datasets/'+args.dataset+'/val.dat'
+        args.validation = 'datasets/' + args.dataset + '/val.dat'
 
     sim_options = {'name': 'cosine',
-                
+
                    'user_based': False  # compute  similarities between items
                    }
 
     if rec == 'ItemKNN':
-        algorithm = KNNBaseline(sim_options=sim_options)
+        algorithm = [KNNBaseline(sim_options=sim_options)]
+        name = ['ItemKNN']
 
     elif rec == 'SVD':
-        algorithm = SVD()
+        algorithm = [SVD()]
+        name = ['SVD']
 
     elif rec == 'NMF':
-        algorithm = NMF()
+        algorithm = [NMF()]
+        name = ['NMF']
 
     else:
-        raise ValueError("Choose between ItemKNN, SVD or NMF")
-
-    itemrec = SurpriseRecommender(algorithm, args.dataset, args.train)
+        algorithm = [KNNBaseline(sim_options=sim_options), SVD(), NMF()]
+        name = ['ItemKNN', 'SVD', 'NMF']
 
     # initialize evaluator
 
@@ -143,18 +138,29 @@ if __name__ == '__main__':
     else:
         implicit = args.implicit
 
-    evaluat = Evaluator(implicit=implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
+    if args.dataset == 'LibraryThing':
+        threshold = 8
+    else:
+        threshold = args.threshold
 
-    # compute features
-    x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
-    x_val, y_val, qids_val, items_val = evaluat.features(itemrec, args.train, args.test,
-                                              validation=False, n_users=args.num_users,
-                                              n_jobs=args.workers, supervised=False)
+    evaluat = Evaluator(implicit=implicit, threshold=threshold, all_unrated_items=args.all_unrated_items)
 
-    print('Finished computing features after %s seconds' % (time.time() - start_time))
+    for i, alg in enumerate(algorithm):
+        print(name[i])
 
-    scores = evaluat.evaluate(itemrec, x_test, y_test, qids_test, verbose=False)  # evaluates the recommender on the test set
+        itemrec = SurpriseRecommender(alg, args.dataset, args.train)
 
-    print(scores)
+        # compute features
+        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, x_val, y_val, qids_val, items_val = evaluat.features(
+            itemrec, args.train, args.test,
+            validation=False,
+            n_jobs=args.workers, supervised=False)
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+        print('Finished computing features after %s seconds' % (time.time() - start_time))
+
+        scores = evaluat.evaluate(itemrec, x_test, y_test, qids_test, items_test,
+                                  verbose=False)  # evaluates the recommender on the test set
+
+        print(scores)
+
+        print("--- %s seconds ---" % (time.time() - start_time))
