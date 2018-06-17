@@ -148,8 +148,8 @@ class TransRecommender(object):
 
         parser = argparse.ArgumentParser(description="Run translational recommender")
 
-        parser.add_argument('--dimensions', type=int, default=500,
-                            help='Number of dimensions. Default is 128.')
+        parser.add_argument('--dimensions', type=int, default=100,
+                            help='Number of dimensions. Default is 100.')
 
         parser.add_argument('--workers', type=int, default=8,
                             help='Number of parallel workers. Default is 8.')
