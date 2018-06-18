@@ -101,7 +101,7 @@ class TransRecommender(object):
 
         except KeyError:
 
-            emb_user = np.zeros(100)
+            emb_user = np.zeros(self.dimensions)
 
         try:
 
@@ -109,7 +109,7 @@ class TransRecommender(object):
 
         except KeyError:
 
-            emb_item = np.zeros(100)
+            emb_item = np.zeros(self.dimensions)
 
         emb_feedback = self.relation_emb_dict['feedback']
 
