@@ -34,7 +34,7 @@ class TransRecommender(object):
 
             index = [i for i in self.relation2id.keys() if self.relation2id[i] == 'feedback']
 
-            self.norm_feedback = np.array(self.norm_matrix[index]).reshape((100,))
+            self.norm_feedback = np.array(self.norm_matrix[index]).reshape((self.dimensions,))
 
         if method == "TransR":
 
