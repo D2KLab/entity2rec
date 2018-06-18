@@ -30,7 +30,7 @@ class TransRecommender(object):
 
         if method == "TransH":
 
-            self.norm_matrix = self._parse_emb_file('datasets/%s/KB2E/%s/A_d%d_lr%.3f.bern' % (self.dataset, method, self.dimensions,self.learning_rate))
+            self.norm_matrix = self._parse_emb_file('benchmarks/KB2E/%s/A_d%d_lr%.3f.bern' % (method, self.dimensions,self.learning_rate))
 
             index = [i for i in self.relation2id.keys() if self.relation2id[i] == 'feedback']
 
@@ -40,13 +40,13 @@ class TransRecommender(object):
 
             # matrix containing rel*size*size elements
 
-            self.M = self._parse_emb_file('datasets/%s/KB2E/%s/A_d%d_lr%.3f.bern' % (self.dataset, method, self.dimensions,self.learning_rate))
+            self.M = self._parse_emb_file('benchmarks/KB2E/%s/A_d%d_lr%.3f.bern' % (method, self.dimensions,self.learning_rate))
 
             index_feedback = [i for i in self.relation2id.keys() if self.relation2id[i] == 'feedback'][0]
 
             data = self.M
 
-            size_emb = 100
+            size_emb = self.dimensions
 
             data = data[index_feedback*size_emb:index_feedback*size_emb+size_emb, :]
 
@@ -292,16 +292,22 @@ if __name__ == '__main__':
             print('Training the %s algorithm' % method)
             print('dataset: %s, size: %s, lr: %.3f' %(args.dataset, args.dimensions, args.learning_rate))
 
-            subprocess.check_output(["./Train_%s" % method, "%s" % args.dataset, "-size", "%d" % args.dimensions,
-                                     "-rate", "%.3f" % args.learning_rate], cwd="benchmarks/KB2E/%s" % method)
-            subprocess.check_output(["mv", "entity2vec.bern", "entity2vec_d%d_lr%.3f.bern" %(args.dimensions, args.learning_rate)],
-                                    cwd="benchmarks/KB2E/%s" % method)
-            subprocess.check_output(["mv", "relation2vec.bern", "relation2vec_d%d_lr%.3f.bern" % (args.dimensions, args.learning_rate)],
-                                    cwd="benchmarks/KB2E/%s" % method)
+            if not isfile("benchmarks/KB2E/%s/entity2vec_d%d_lr%.3f.bern" % (method, args.dimensions, args.learning_rate)):
 
-            if method is not "TransE":
-                subprocess.check_output(["mv", "A.bern", "A_d%d_lr%.3f.bern" % (args.dimensions, args.learning_rate)],
-                                    cwd="benchmarks/KB2E/%s" % method)
+                subprocess.check_output(["./Train_%s" % method, "%s" % args.dataset, "-size", "%d" % args.dimensions,
+                                         "-rate", "%.3f" % args.learning_rate], cwd="benchmarks/KB2E/%s" % method)
+                subprocess.check_output(["mv", "entity2vec.bern", "entity2vec_d%d_lr%.3f.bern" %(args.dimensions, args.learning_rate)],
+                                        cwd="benchmarks/KB2E/%s" % method)
+                subprocess.check_output(["mv", "relation2vec.bern", "relation2vec_d%d_lr%.3f.bern" % (args.dimensions, args.learning_rate)],
+                                        cwd="benchmarks/KB2E/%s" % method)
+
+                if method is not "TransE":
+                    subprocess.check_output(["mv", "A.bern", "A_d%d_lr%.3f.bern" % (args.dimensions, args.learning_rate)],
+                                        cwd="benchmarks/KB2E/%s" % method)
+
+            else:
+                
+                print("embeddings already exist")
 
         # initialize trans recommender
         trans_rec = TransRecommender(args.dataset, dimensions=args.dimensions, learning_rate=args.learning_rate,
