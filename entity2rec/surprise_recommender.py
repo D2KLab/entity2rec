@@ -1,16 +1,15 @@
 import time
 import numpy as np
 from evaluator import Evaluator
-from surprise import SVD, KNNBaseline, NMF, KNNWithMeans
+from surprise import SVD, KNNBaseline, NMF
 from surprise import Reader
 from surprise import Dataset
 import os
-import sys
 import argparse
 
 
 class SurpriseRecommender:
-    def __init__(self, algorithm, dataset, train):
+    def __init__(self, algorithm, dataset, train, implicit, threshold):
         self.algorithm = algorithm
 
         self.train = train
@@ -21,12 +20,25 @@ class SurpriseRecommender:
 
         self.user_to_ind = {}
 
+        self.implicit = implicit
+
+        self.threshold = threshold
+
         self.model = self._learn_model_surprise()
 
+
     def _learn_model_surprise(self):
+
         file_path = os.path.expanduser(self.train)
 
-        reader = Reader(line_format='user item rating timestamp', sep=' ')
+        if self.implicit:
+
+            rating_scale = (0,1)
+
+        else:
+            rating_scale = (1, (self.threshold*5)//4)
+
+        reader = Reader(line_format='user item rating timestamp', sep=' ', rating_scale=rating_scale)
 
         data = Dataset.load_from_file(file_path, reader=reader)
 
@@ -39,6 +51,7 @@ class SurpriseRecommender:
         return algo
 
     def compute_user_item_features(self, user, item, items_liked_by_user, users_liking_the_item):
+        
         features = [self.model.predict(user, item)[3]]
 
         return features
@@ -47,6 +60,7 @@ class SurpriseRecommender:
         return 0
 
     def predict(self, x_test, qids_test):
+
         preds = x_test
 
         return preds
@@ -84,6 +98,9 @@ class SurpriseRecommender:
                             help='Threshold to convert ratings into binary feedback')
 
         parser.add_argument('--recommender', dest='recommender', help="which recommender to use")
+
+        parser.add_argument('--num_users', dest='num_users', type=int, default=False,
+                            help='Sample of users for evaluation')
 
         return parser.parse_args()
 
@@ -148,13 +165,13 @@ if __name__ == '__main__':
     for i, alg in enumerate(algorithm):
         print(name[i])
 
-        itemrec = SurpriseRecommender(alg, args.dataset, args.train)
+        itemrec = SurpriseRecommender(alg, args.dataset, args.train, implicit, threshold)
 
         # compute features
         x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, x_val, y_val, qids_val, items_val = evaluat.features(
             itemrec, args.train, args.test,
             validation=False,
-            n_jobs=args.workers, supervised=False)
+            n_jobs=args.workers, supervised=False, n_users=args.num_users)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
 
