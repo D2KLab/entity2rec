@@ -292,7 +292,7 @@ if __name__ == '__main__':
             print('Training the %s algorithm' % method)
             print('dataset: %s, size: %s, lr: %.3f' %(args.dataset, args.dimensions, args.learning_rate))
 
-            if not isfile("benchmarks/KB2E/%s/entity2vec_d%d_lr%.3f.bern" % (method, args.dimensions, args.learning_rate)):
+            if not os.path.isfile("benchmarks/KB2E/%s/entity2vec_d%d_lr%.3f.bern" % (method, args.dimensions, args.learning_rate)):
 
                 subprocess.check_output(["./Train_%s" % method, "%s" % args.dataset, "-size", "%d" % args.dimensions,
                                          "-rate", "%.3f" % args.learning_rate], cwd="benchmarks/KB2E/%s" % method)
@@ -306,7 +306,7 @@ if __name__ == '__main__':
                                         cwd="benchmarks/KB2E/%s" % method)
 
             else:
-                
+
                 print("embeddings already exist")
 
         # initialize trans recommender
