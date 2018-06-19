@@ -58,7 +58,7 @@ class MostPop(object):
 
         return features
 
-    def predict(self, x_test):
+    def predict(self, x_test, qids_test):
 
         return x_test
 
@@ -75,12 +75,18 @@ if __name__ == '__main__':
 
     evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
-    x_train, y_train, qids_train, x_test, y_test, qids_test,\
-    x_val, y_val, qids_val = evaluat.features(mostpop_rec, args.train, args.test, validation=args.validation,
+    x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
+    x_val, y_val, qids_val, items_val = evaluat.features(mostpop_rec, args.train, args.test, validation=args.validation, n_jobs=args.workers,
                                               n_users=args.num_users)
 
     print('Finished computing features after %s seconds' % (time.time() - start_time))
 
-    evaluat.evaluate(mostpop_rec, x_test, y_test, qids_test)  # evaluates the model on the test set
+    if args.write_features:
+
+        evaluat.write_features_to_file('train', qids_train, x_train, y_train, items_train)
+
+        evaluat.write_features_to_file('test', qids_test, x_test, y_test, items_test)
+
+    evaluat.evaluate(mostpop_rec, x_test, y_test, qids_test, items_test)  # evaluates the model on the test set
 
     print("--- %s seconds ---" % (time.time() - start_time))

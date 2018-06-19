@@ -262,9 +262,19 @@ class Evaluator(object):
 
     def _compute_features_parallel(self, data, recommender, users_list_chunks, n_jobs):
 
-        user_item_features = Parallel(n_jobs=n_jobs)(delayed(self._compute_features)
-                                                                          (data, recommender, users_list)
-                                                                          for users_list in users_list_chunks)
+        if n_jobs > 1: # parallel
+
+            user_item_features = Parallel(n_jobs=n_jobs)(delayed(self._compute_features)
+                                                                              (data, recommender, users_list)
+                                                                              for users_list in users_list_chunks)
+
+        else: # sequential 
+
+            user_item_features = []
+
+            for users_list in users_list_chunks:
+
+                user_item_features.append(self._compute_features(data, recommender, users_list))
 
         x_chunks = [user_item_features[i][0] for i in range(n_jobs)]
 
