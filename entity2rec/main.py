@@ -76,8 +76,6 @@ print('Finished fitting the model after %s seconds' % (time.time() - start_time)
 
 evaluat.evaluate(e2rec, x_test, y_test, qids_test, items_test)  # evaluates the recommender on the test set
 
-evaluat.evaluate_heuristics(x_test, y_test, qids_test, items_test)  # evaluates the heuristics on the test set
-
 print("--- %s seconds ---" % (time.time() - start_time))
 
 if args.write_features:

@@ -329,7 +329,7 @@ class Evaluator(object):
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids), np.asarray(Titems)
 
-    def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True):
+    def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True, write_to_file=True):
 
         if not self.all_items:  # reading the features from file
 
@@ -341,54 +341,36 @@ class Evaluator(object):
 
         self._define_metrics(M)
 
-        scores = []
+        scores = {}
+
+        strategies = {'l2r': recommender.predict(x_test, qids_test),
+                      'avg': list(map(lambda x: np.mean(x), x_test)),
+                      'min': list(map(lambda x: np.min(x), x_test)),
+                      'max': list(map(lambda x: np.max(x), x_test))}
 
         if self.metrics:
 
-            preds = recommender.predict(x_test, qids_test)
+            if verbose:
+                print('\n')
+                print('Strategy-----Metric-----Mean-----Var\n')
 
-            for name, metric in self.metrics.items():
+            for strategy_name, preds in strategies.items():
 
-                if name != 'fit':
+                for metric_name, metric in self.metrics.items():
 
-                    score = metric.calc_mean(qids_test, y_test, preds, items=items_test)
+                    if metric_name != 'fit':
 
-                    scores.append((name, score))
+                        score = metric.calc_mean(qids_test, y_test, preds, items=items_test)
 
-                    if verbose:
+                        var = metric.calc_mean_var(qids_test, y_test, preds, items=items_test)
 
-                        print('%s-----%f\n' % (name, score))
+                        scores[(strategy_name, metric_name)] = (score, var)
+
+                        if verbose:
+
+                            print('%s-----%s-----%f-----%f\n' % (strategy_name, metric_name, score, var))
 
         return scores
-
-    def evaluate_heuristics(self, x_test, y_test, qids_test, items_test):
-
-        preds_average = list(map(lambda x: np.mean(x), x_test))  # average of the relatedness scores
-
-        preds_max = list(map(lambda x: np.max(x), x_test))  # max of the relatedness scores
-
-        preds_min = list(map(lambda x: np.min(x), x_test))  # min of the relatedness scores
-
-        print('Average:')
-
-        for name, metric in self.metrics.items():
-
-            if name != 'fit':
-                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_average, items=items_test)))
-
-        print('Min:')
-
-        for name, metric in self.metrics.items():
-
-            if name != 'fit':
-                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_min, items=items_test)))
-
-        print('Max:')
-
-        for name, metric in self.metrics.items():
-
-            if name != 'fit':
-                print('%s-----%f\n' % (name, metric.calc_mean(qids_test, y_test, preds_max, items=items_test)))
 
     @staticmethod
     def read_features(train, test, val=None):
