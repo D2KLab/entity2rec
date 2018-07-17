@@ -23,6 +23,15 @@ class MetricItem(Metric):
         return np.mean([self.evaluate_preds(qid, targets[a:b], preds[a:b], items=items[a:b])
                         for qid, a, b in query_groups])
 
+    def calc_mean_var(self, qids, targets, preds, items=None):
+        if items is None:
+            return Metric.calc_mean(self, qids, targets, preds)
+        check_qids(qids)
+        query_groups = get_groups(qids)
+        score_list = [self.evaluate_preds(qid, targets[a:b], preds[a:b], items=items[a:b])
+                        for qid, a, b in query_groups]
+        return np.var(score_list)/len(score_list)
+
     def evaluate_preds(self, qid, targets, preds, items=None):
         if items is None:
             return Metric.evaluate_preds(self, qid, targets, preds)
