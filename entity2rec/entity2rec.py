@@ -402,7 +402,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             preds = list(map(lambda x: np.mean(x), features))
 
-        candidates_index = {i: candidate for i, candidate in enumerate(candidates)}
+        candidates_index = {i: [candidate, (self.properties[np.argmax(features[i])]).name] for i, candidate in enumerate(candidates)}
 
         recs_index = heapq.nlargest(N, candidates_index.keys(), key=lambda x: preds[x])
 
