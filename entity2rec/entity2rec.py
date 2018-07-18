@@ -11,6 +11,7 @@ sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
 from collections import defaultdict
 from sklearn import preprocessing
+import heapq
 
 
 class Property:
@@ -348,7 +349,6 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
                 self.model.fit(x_train, y_train, qids_train)
 
-
     def predict(self, x_test, qids_test):
 
         if self.user_to_cluster:
@@ -386,14 +386,26 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         self.model = joblib.load(model_file)
 
-    def recommend(self, user, qids_test, x_test, candidates, N=10):
+    def recommend(self, user, qids_test, x_test, items_test, N=10, average=True):
 
-        features_indeces = np.where(qids_test == user)
+        indeces = np.where(qids_test == user)  # find indeces corresponding to user
 
-        features = x_test[features_indeces]
+        features = x_test[indeces]  # find features corresponding to user
 
-        preds = self.model.predict(features)
+        candidates = items_test[indeces]  # find candidate items corresponding to users
 
-        items = np.lexsort(candidates, preds)[:N]
+        if not average:
 
-        return items
+            preds = self.model.predict(features)
+
+        else:
+
+            preds = list(map(lambda x: np.mean(x), features))
+
+        candidates_index = {i: candidate for i, candidate in enumerate(candidates)}
+
+        recs_index = heapq.nlargest(N, candidates_index.keys(), key=lambda x: preds[x])
+
+        recs = [candidates_index[index] for index in recs_index]
+
+        return recs
