@@ -2,12 +2,9 @@ from __future__ import print_function
 import json
 from os.path import isfile, join
 from os import makedirs
-from os import listdir
 import argparse
 from node2vec import Node2Vec
 import time
-import codecs
-from sparql import Sparql
 import shutil
 
 

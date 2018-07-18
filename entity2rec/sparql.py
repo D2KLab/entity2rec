@@ -4,8 +4,6 @@ import optparse
 import codecs
 from os import mkdir
 import json
-from collections import Counter
-import operator
 
 
 class Sparql(object):
@@ -36,71 +34,19 @@ class Sparql(object):
 
     def _define_properties(self, config_file):
 
+        self.properties = []
+
         with codecs.open(config_file, 'r', encoding='utf-8') as config_read:
 
             property_file = json.loads(config_read.read())
 
-        try:
+            for property_name in property_file[self.dataset]['content']:
 
-            self.properties = [i for i in property_file[self.dataset]]
-            print(self.properties)
+                if 'feedback_' in property_name:
 
-        except KeyError:
+                    property_name = property_name.replace('feedback_', '')
 
-            print("No set of properties provided in the dataset")
-
-            self._get_properties()
-
-    def _get_properties(self):  # get frequent properties from sparql endpoint if a list is not provided in config file
-
-        self.properties = []
-
-        self.wrapper.setReturnFormat(JSON)
-
-        c = Counter()
-
-        for entity in self.entities:
-
-            query = 'select distinct ?p ' \
-                         'where {{ <{}> ?p ?o. ' \
-                         'FILTER(!isLiteral(?o) && regex(STR(?p),' \
-                         '"dbpedia.org/ontology") && !regex(STR(?p),' \
-                         '"wiki") && !regex(STR(?p),"thumb"))}} '.format(entity)
-
-            self.wrapper.setQuery(query)
-
-            for results in self.wrapper.query().convert()['results']['bindings']:
-
-                prop = results['p']['value']
-
-                c[prop] += 1
-
-        sorted_props = sorted(c.items(), key=operator.itemgetter(1), reverse=True)
-
-        print(sorted_props)
-
-        self.properties.append(sorted_props[0][0])  # add the first ranked property
-
-        for i, (p, count) in enumerate(sorted_props[0:-1]):
-
-            next_p = sorted_props[i+1][0]
-            next_count = sorted_props[i+1][1]
-
-            change_rate = (next_count - count) / count
-
-            print(change_rate)
-
-            if change_rate >= - 0.5:  # check whether the freq drop is larger than 50%
-
-                self.properties.append(next_p)
-
-            else:
-
-                break
-
-        self.properties.append("dct:subject")
-
-        print(self.properties)
+                self.properties.append(property_name)
 
     def get_property_graphs(self):
 
