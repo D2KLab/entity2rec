@@ -329,7 +329,7 @@ class Evaluator(object):
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids), np.asarray(Titems)
 
-    def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True, write_to_file=True):
+    def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True, write_to_file='results.csv'):
 
         if not self.all_items:  # reading the features from file
 
@@ -354,21 +354,46 @@ class Evaluator(object):
                 print('\n')
                 print('Strategy-----Metric-----Mean-----Var\n')
 
-            for strategy_name, preds in strategies.items():
+            with open(write_to_file, 'w') as file_write:
 
-                for metric_name, metric in self.metrics.items():
+                file_write.write('strategy,')
 
-                    if metric_name != 'fit':
+                len_metrics = len(self.metrics.items())
 
-                        score = metric.calc_mean(qids_test, y_test, preds, items=items_test)
+                for i, (metric_name, metric) in enumerate(self.metrics.items()):
 
-                        var = metric.calc_mean_var(qids_test, y_test, preds, items=items_test)
+                    if i < len_metrics - 1:
 
-                        scores[(strategy_name, metric_name)] = (score, var)
+                        file_write.write('%s,' % metric_name)
 
-                        if verbose:
+                    else:
 
-                            print('%s-----%s-----%f-----%f\n' % (strategy_name, metric_name, score, var))
+                        file_write.write('%s\n' % metric_name)
+
+                for strategy_name, preds in strategies.items():
+
+                    file_write.write('%s,' % strategy_name)
+
+                    for i, (metric_name, metric) in enumerate(self.metrics.items()):
+
+                        if metric_name != 'fit':
+
+                            score = metric.calc_mean(qids_test, y_test, preds, items=items_test)
+
+                            var = metric.calc_mean_var(qids_test, y_test, preds, items=items_test)
+
+                            scores[(strategy_name, metric_name)] = (score, var)
+
+                            if verbose:
+
+                                print('%s-----%s-----%.4f+-%.4f\n' % (strategy_name, metric_name, score, var))
+
+                            if i < len_metrics - 1:
+
+                                file_write.write('%.4f+-%.4f,' % (score, var))
+                            else:
+
+                                file_write.write('%.4f+-%.4f\n' % (score, var))
 
         return scores
 

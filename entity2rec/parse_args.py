@@ -9,20 +9,21 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description="Run entity2rec.")
 
-    parser.add_argument('--walk_length', type=int, default=10,
-                        help='Length of walk per source. Default is 10.')
+    parser.add_argument('--walk_length', type=int, default=100,
+                        help='Length of walk per source')
 
-    parser.add_argument('--num_walks', type=int, default=500,
+    parser.add_argument('--num_walks', type=int, default=50,
                         help='Number of walks per source. Default is 40.')
 
     parser.add_argument('--p', type=float, default=1,
                         help='Return hyperparameter. Default is 1.')
 
     parser.add_argument('--q', type=float, default=1,
-                        help='Inout hyperparameter. Default is 1.')
+                        help='In-out hyperparameter. Default is 1.')
 
     parser.add_argument('--weighted', dest='weighted', action='store_true',
                         help='Boolean specifying (un)weighted. Default is unweighted.')
+
     parser.add_argument('--unweighted', dest='unweighted', action='store_false')
     parser.set_defaults(weighted=False)
 
@@ -34,11 +35,11 @@ def parse_args():
                         help='Whether preprocess all transition probabilities or compute on the fly')
     parser.set_defaults(preprocessing=True)
 
-    parser.add_argument('--dimensions', type=int, default=500,
-                        help='Number of dimensions. Default is 128.')
+    parser.add_argument('--dimensions', type=int, default=200,
+                        help='Number of dimensions. Default is 200.')
 
-    parser.add_argument('--window_size', type=int, default=10,
-                        help='Context size for optimization. Default is 10.')
+    parser.add_argument('--window_size', type=int, default=30,
+                        help='Context size for optimization. Default is 30.')
 
     parser.add_argument('--iter', default=5, type=int,
                         help='Number of epochs in SGD')
@@ -99,6 +100,6 @@ def parse_args():
                         help='Only select users with less than max_n_feedback for training and evaluation')
 
     parser.add_argument('--user_clusters', dest='user_clusters', type=int, default=False,
-        help='Cluster users and fit several models')
+                        help='Cluster users and fit several models')
 
     return parser.parse_args()

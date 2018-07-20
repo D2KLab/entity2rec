@@ -1,16 +1,14 @@
 import time
-from gensim.models.keyedvectors import KeyedVectors
 import numpy as np
 from evaluator import Evaluator
 import argparse
+
 
 class MMLRecommender(object):
 
     def __init__(self, dataset, recommender):
 
-        self.mml_model = self._read_scores('benchmarks/MyMediaLite-3.11/%s_scores.txt' %recommender)
-
-        #print(self.mml_model[('1366','http://dbpedia.org/resource/The_Winter_Guest')])
+        self.mml_model = self._read_scores('benchmarks/MyMediaLite-3.11/%s_scores.txt' % recommender)
 
     def _read_scores(self, file):
         
@@ -26,7 +24,7 @@ class MMLRecommender(object):
                 item = line_split[1]
                 score = line_split[2]
 
-                model[(user,item)] = float(score)
+                model[(user, item)] = float(score)
 
         return model
 
@@ -90,13 +88,14 @@ def parse_args():
 
     return parser.parse_args()
 
+
 if __name__ == '__main__':
 
     np.random.seed(1)  # fixed seed for reproducibility
 
     start_time = time.time()
 
-    #print('Starting MyMediaLite recommender...')
+    print('Starting MyMediaLite recommender...')
 
     args = parse_args()
 
@@ -113,7 +112,7 @@ if __name__ == '__main__':
                                               validation=False, 
                                               n_jobs=args.workers, supervised=False)
 
-    #print('Finished computing features after %s seconds' % (time.time() - start_time))
+    print('Finished computing features after %s seconds' % (time.time() - start_time))
 
     scores = evaluat.evaluate(mml_rec, x_test, y_test, qids_test, items_test, verbose=False)  # evaluates the recommender on the test set
 
@@ -121,4 +120,4 @@ if __name__ == '__main__':
 
     print(scores_)
 
-    #print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- %s seconds ---" % (time.time() - start_time))

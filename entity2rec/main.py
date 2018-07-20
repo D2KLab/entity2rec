@@ -1,5 +1,4 @@
 import random
-from pyltr.data import letor
 from entity2rec import Entity2Rec
 from evaluator import Evaluator
 import time
@@ -14,6 +13,8 @@ print('Starting entity2rec...')
 
 args = parse_args()
 
+# default settings
+
 if not args.train:
     args.train = 'datasets/'+args.dataset+'/train.dat'
 
@@ -23,8 +24,24 @@ if not args.test:
 if not args.validation:
     args.validation = 'datasets/'+args.dataset+'/val.dat'
 
+if args.dataset == 'LastFM':
 
-# initialize entity2rec recommender
+    implicit = True
+
+else:
+
+    implicit = args.implicit
+
+if args.dataset == 'LibraryThing':
+
+    threshold = 8
+
+else:
+
+    threshold = args.threshold
+
+# initialize recommender
+
 e2rec = Entity2Rec(args.dataset, run_all=args.run_all, p=args.p, q=args.q,
                    feedback_file=args.feedback_file, walk_length=args.walk_length,
                    num_walks=args.num_walks, dimensions=args.dimensions, window_size=args.window_size,
@@ -54,19 +71,18 @@ print('Starting to fit the model...')
 # start the clustering of users
 if args.user_clusters:
 
-  n2v_rec = Node2VecRecommender(args.dataset, p=args.p, q=args.q, walk_length=args.walk_length,
-                               num_walks=args.num_walks, dimensions=args.dimensions, 
+    n2v_rec = Node2VecRecommender(args.dataset, p=args.p, q=args.q, walk_length=args.walk_length,
+                               num_walks=args.num_walks, dimensions=args.dimensions,
                                window_size=args.window_size, iterations=args.iter)
 
-  user_list = list(map(lambda x: str(x), sorted(list(set(qids_train)))))
-  user_to_cluster = n2v_rec.cluster_users(2, user_list)
+    user_list = list(map(lambda x: str(x), sorted(list(set(qids_train)))))
+    user_to_cluster = n2v_rec.cluster_users(2, user_list)
 
-
-  user_to_cluster = n2v_rec.cluster_users(2, evaluat._define_user_list(args.num_users, args.max_n_feedback, args.workers))
+    user_to_cluster = n2v_rec.cluster_users(2, evaluat._define_user_list(args.num_users, args.max_n_feedback, args.workers))
 
 else:
 
-  user_to_cluster = None
+    user_to_cluster = None
 
 # fit e2rec on features
 e2rec.fit(x_train, y_train, qids_train,
@@ -74,7 +90,10 @@ e2rec.fit(x_train, y_train, qids_train,
 
 print('Finished fitting the model after %s seconds' % (time.time() - start_time))
 
-evaluat.evaluate(e2rec, x_test, y_test, qids_test, items_test)  # evaluates the recommender on the test set
+scores = evaluat.evaluate(e2rec, x_test, y_test, qids_test, items_test,
+                          write_to_file="results/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.csv"
+                                        % (args.dataset, args.num_walks, args.p, args.q, args.walk_length,
+                                           args.dimensions, args.iter, args.window_size))
 
 print("--- %s seconds ---" % (time.time() - start_time))
 
