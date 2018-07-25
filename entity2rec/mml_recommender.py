@@ -2,11 +2,13 @@ import time
 import numpy as np
 from evaluator import Evaluator
 import argparse
+import subprocess
+import os
 
 
 class MMLRecommender(object):
 
-    def __init__(self, dataset, recommender):
+    def __init__(self, recommender):
 
         self.mml_model = self._read_scores('benchmarks/MyMediaLite-3.11/%s_scores.txt' % recommender)
 
@@ -49,6 +51,106 @@ class MMLRecommender(object):
         preds = x_test
 
         return preds
+
+    @staticmethod
+    def data_preprocessing(dataset):
+
+        all_data = 'datasets/%s/all.dat' % dataset
+        train_data = 'datasets/%s/train.dat' % dataset
+        val_data = 'datasets/%s/val.dat' % dataset
+        test_data = 'datasets/%s/test.dat' % dataset
+
+        items_list = []
+
+        with open(all_data) as all_file:
+
+            for line in all_file:
+                line_split = line.strip('\n').split(' ')
+
+                items_list.append(line_split[1])
+
+        items_list = list(set(items_list))  # remove duplicates
+
+        item_index = {i: item for i, item in enumerate(items_list)}  # create index
+
+        with open('benchmarks/MyMediaLite-3.11/item_index_%s.txt' % dataset, 'w') as item_index_file:
+
+            for index, item in item_index.items():
+                item_index_file.write('%d %s\n' % (index, item))
+
+        index_item = {item: i for i, item in item_index.items()}
+
+        def convert_to_mml(train, train_mml, index_item):
+
+            with open(train) as train_file:
+                with open(train_mml, 'w') as train_mml_file:
+                    for line in train_file:
+                        line_split = line.strip('\n').split(' ')
+
+                        user = line_split[0]
+
+                        item = line_split[1]
+
+                        rating = line_split[2]
+
+                        timestamp = line_split[3]
+
+                        index = index_item[item]
+
+                        train_mml_file.write('%s %d %s %s\n' % (user, index, rating, timestamp))
+
+        convert_to_mml(train_data, "train.mml", index_item)
+
+        convert_to_mml(val_data, "val.mml", index_item)
+
+        convert_to_mml(test_data, "test.mml", index_item)
+
+    @staticmethod
+    def prediction_parser(recommender, dataset):
+
+        prediction_file = 'benchmarks/MyMediaLite-3.11/%s_ranked_predictions.txt' % recommender
+        scores = 'benchmarks/MyMediaLite-3.11/%s_scores.txt' % recommender
+        index_file = 'benchmarks/MyMediaLite-3.11/item_index_%s.txt' % dataset
+
+        index = dict()
+
+        with open(index_file) as index_file_read:
+
+            for line in index_file_read:
+                line_split = line.strip('\n').split(' ')
+
+                ind = line_split[0]
+
+                item = line_split[1]
+
+                index[ind] = item
+
+        with open(prediction_file) as prediction_file_read:
+
+            with open(scores, 'w') as score_file:
+
+                for line in prediction_file_read:
+
+                    line_split = line.strip('\n').split('\t')
+
+                    user = line_split[0]
+
+                    item_score_pairs = line_split[1].replace('[', '').replace(']', '').split(',')
+
+                    for item_score in item_score_pairs:
+                        print(item_score)
+
+                        item_score_split = item_score.split(':')
+
+                        item_ind = item_score_split[0]
+
+                        item = index[item_ind]
+
+                        score = item_score_split[1]
+
+                        print(item, score)
+
+                        score_file.write('%s %s %s\n' % (user, item, score))
 
 
 def parse_args():
@@ -99,25 +201,110 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    # initialize MyMediaLite recommender
-    mml_rec = MMLRecommender(args.dataset, args.recommender)
+    if args.recommender == 'all':
+
+        recommenders = ['MostPopular', 'SoftMarginRankingMF', 'BPRMF', 'LeastSquareSLIM', 'ItemKNN', 'WRMF',
+                        'MultiCoreBPRMF', 'WeightedBPRMF', 'BPRSLIM']
+
+    else:
+
+        recommenders = [args.recommender]
+
+    # default settings
+
+    if not args.train:
+        args.train = 'datasets/' + args.dataset + '/train.dat'
+
+    if not args.test:
+        args.test = 'datasets/' + args.dataset + '/test.dat'
+
+    if not args.validation:
+        args.validation = 'datasets/' + args.dataset + '/val.dat'
+
+    if args.dataset == 'LastFM':
+
+        implicit = True
+
+    else:
+
+        implicit = args.implicit
+
+    if args.dataset == 'LibraryThing':
+
+        threshold = 8
+
+    else:
+
+        threshold = args.threshold
+
+    #  create mml compatible data and index
+    MMLRecommender.data_preprocessing(args.dataset)
 
     # initialize evaluator
 
     evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
-    # compute e2rec features
-    x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
-    x_val, y_val, qids_val, items_val = evaluat.features(mml_rec, args.train, args.test,
-                                              validation=False, 
-                                              n_jobs=args.workers, supervised=False)
+    # write candidates to file
 
-    print('Finished computing features after %s seconds' % (time.time() - start_time))
+    evaluat.write_candidates(args.train, args.test, 'benchmarks/MyMediaLite-3.11/users/%s' % args.dataset,
+                             'benchmarks/MyMediaLite-3.11/candidates/%s' % args.dataset,
+                             'benchmarks/MyMediaLite-3.11/item_index_%s.txt' % args.dataset)
 
-    scores = evaluat.evaluate(mml_rec, x_test, y_test, qids_test, items_test, verbose=False)  # evaluates the recommender on the test set
+    for recommender in recommenders:
 
-    scores_ = [np.round(score, decimals=6) for metric, score in scores]
+        print('%s' % recommender)
 
-    print(scores_)
+        if '%s' % recommender not in 'benchmarks/MyMediaLite-3.11/models/%s' % args.dataset:
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+            # train mymedialite model and save it to file
+            subprocess.check_output(["./benchmarks/MyMediaLite-3.11/bin/item_recommendation",
+                                     "--training-file=benchmarks/MyMediaLite-3.11/data/%s/train.mml" % args.dataset,
+                                     "--test-file=benchmarks/MyMediaLite-3.11/data/%s/test.mml" % args.dataset,
+                                     "--recommender=%s" % recommender,
+                                     "--save-model=benchmarks/MyMediaLite-3.11/models/%s/%s" % (args.dataset, recommender),
+                                     "--rating-threshold=%s" % args.threshold])
+
+        os.system("rm benchmarks/MyMediaLite-3.11/predictions/%s/*.txt" % args.dataset)
+
+        # generate predictions and save them to file
+        for file in os.listdir('benchmarks/MyMediaLite-3.11/users/%s' % args.dataset):
+
+            print(file)
+
+            subprocess.check_output(["./benchmarks/MyMediaLite-3.11/bin/item_recommendation",
+                                     "--training-file=benchmarks/MyMediaLite-3.11/data/%s/train.mml" % args.dataset,
+                                     "--test-file=benchmarks/MyMediaLite-3.11/data/%s/test.mml" % args.dataset,
+                                     "--recommender=%s" % recommender,
+                                     "--load-model=benchmarks/MyMediaLite-3.11/models/%s/%s" % (args.dataset, recommender),
+                                     "--rating-threshold=%s" % args.threshold,
+                                     "--prediction-file=benchmarks/MyMediaLite-3.11/predictions/%s/%s_%s" % (args.dataset, recommender, file),
+                                     "--candidate-items=benchmarks/MyMediaLite-3.11/candidates/%s/%s" % (args.dataset, file),
+                                     "--test-users=benchmarks/MyMediaLite-3.11/users/%s/%s" % (args.dataset, file)])
+
+        # concatenate the outputs into a single file
+        os.system("cat benchmarks/MyMediaLite-3.11/predictions/%s/%s_* >  "
+                  "benchmarks/MyMediaLite-3.11/%s_ranked_predictions.txt"
+                  % (args.dataset, recommender, recommender))
+
+        # parse the output
+        MMLRecommender.prediction_parser(recommender, args.dataset)
+
+        # initialize MyMediaLite recommender
+        mml_rec = MMLRecommender(recommender)
+
+
+        # compute e2rec features
+        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
+        x_val, y_val, qids_val, items_val = evaluat.features(mml_rec, args.train, args.test,
+                                                             validation=False,
+                                                             n_jobs=args.workers,
+                                                             supervised=False)
+
+        print('Finished computing features after %s seconds' % (time.time() - start_time))
+
+        scores = evaluat.evaluate(mml_rec, x_test, y_test, qids_test, items_test,
+                                  write_to_file="benchmarks/MyMediaLite-3.11/results/%s/%s.csv"
+                                                % (args.dataset, recommender),
+                                  baseline=True)
+
+        print("--- %s seconds ---" % (time.time() - start_time))

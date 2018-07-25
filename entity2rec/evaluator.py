@@ -329,7 +329,9 @@ class Evaluator(object):
 
         return np.asarray(TX), np.asarray(Ty), np.asarray(Tqids), np.asarray(Titems)
 
-    def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True, write_to_file='results.csv'):
+    def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True,
+                 write_to_file='results.csv',
+                 baseline=False):
 
         if not self.all_items:  # reading the features from file
 
@@ -343,10 +345,14 @@ class Evaluator(object):
 
         scores = {}
 
-        strategies = {'l2r': recommender.predict(x_test, qids_test),
-                      'avg': list(map(lambda x: np.mean(x), x_test)),
-                      'min': list(map(lambda x: np.min(x), x_test)),
-                      'max': list(map(lambda x: np.max(x), x_test))}
+        if baseline:
+            strategies = {'algorithm':  recommender.predict(x_test, qids_test)}
+
+        else:
+            strategies = {'l2r': recommender.predict(x_test, qids_test),
+                          'avg': list(map(lambda x: np.mean(x), x_test)),
+                          'min': list(map(lambda x: np.min(x), x_test)),
+                          'max': list(map(lambda x: np.max(x), x_test))}
 
         if self.metrics:
 
