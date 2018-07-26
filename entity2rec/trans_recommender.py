@@ -21,16 +21,19 @@ class TransRecommender(object):
         self.relation2id = self._parse_ind_file('benchmarks/KB2E/data/%s/relation2id.txt' % self.dataset)
 
         self.entity_emb_matrix = self._parse_emb_file('benchmarks/KB2E/%s/entity2vec_d%d_lr%.3f.bern' % (method,
-                                                                                                        self.dimensions,self.learning_rate))
+                                                                                                         self.dimensions,
+                                                                                                         self.learning_rate))
         self.relation_emb_matrix = self._parse_emb_file('benchmarks/KB2E/%s/relation2vec_d%d_lr%.3f.bern' % (method,
-                                                                                                            self.dimensions, self.learning_rate))
+                                                                                                         self.dimensions,
+                                                                                                         self.learning_rate))
 
         self.entity_emb_dict = self._build_emb_dictionary(self.entity_emb_matrix, self.entity2id)
         self.relation_emb_dict = self._build_emb_dictionary(self.relation_emb_matrix, self.relation2id)
 
         if method == "TransH":
 
-            self.norm_matrix = self._parse_emb_file('benchmarks/KB2E/%s/A_d%d_lr%.3f.bern' % (method, self.dimensions,self.learning_rate))
+            self.norm_matrix = self._parse_emb_file('benchmarks/KB2E/%s/A_d%d_lr%.3f.bern' % (method, self.dimensions,
+                                                                                              self.learning_rate))
 
             index = [i for i in self.relation2id.keys() if self.relation2id[i] == 'feedback']
 
@@ -323,6 +326,8 @@ if __name__ == '__main__':
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
 
-        evaluat.evaluate(trans_rec, x_test, y_test, qids_test, items_test)  # evaluates the recommender on the test set
+        evaluat.evaluate(trans_rec, x_test, y_test, qids_test, items_test,
+                         write_to_file="results/%s/translational/%s.csv" % (args.dataset, method),
+                         baseline=True)  # evaluates the recommender on the test set
 
         print("--- %s seconds ---" % (time.time() - start_time))

@@ -91,7 +91,7 @@ e2rec.fit(x_train, y_train, qids_train,
 print('Finished fitting the model after %s seconds' % (time.time() - start_time))
 
 scores = evaluat.evaluate(e2rec, x_test, y_test, qids_test, items_test,
-                          write_to_file="results/%s/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.csv"
+                          write_to_file="results/%s/entity2rec/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.csv"
                                         % (args.dataset, args.num_walks, args.p, args.q, args.walk_length,
                                            args.dimensions, args.iter, args.window_size))
 

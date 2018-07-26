@@ -9,7 +9,7 @@ import pyltr
 import numpy as np
 from random import shuffle
 from collections import Counter
-from operator import itemgetter
+import os
 
 def parse_line(line):
 
@@ -332,6 +332,36 @@ class Evaluator(object):
     def evaluate(self, recommender, x_test, y_test, qids_test, items_test, verbose=True,
                  write_to_file='results.csv',
                  baseline=False):
+
+        if '/' in write_to_file:
+
+            path = write_to_file.split('/')[:-1]
+
+            nested_folder = path[0]
+
+            print(path)
+
+            try:
+
+                os.mkdir(nested_folder)
+
+            except FileExistsError:
+
+                for folder in path[1:]:
+
+                    nested_folder = nested_folder + '/'
+
+                    nested_folder = nested_folder + folder
+
+                    try:
+
+                        os.mkdir(nested_folder)
+
+                    except FileExistsError:
+
+                        pass
+
+                pass
 
         if not self.all_items:  # reading the features from file
 

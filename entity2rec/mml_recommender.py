@@ -300,8 +300,7 @@ if __name__ == '__main__':
         print('Finished computing features after %s seconds' % (time.time() - start_time))
 
         scores = evaluat.evaluate(mml_rec, x_test, y_test, qids_test, items_test,
-                                  write_to_file="benchmarks/MyMediaLite-3.11/results/%s/%s.csv"
-                                                % (args.dataset, recommender),
+                                  write_to_file="results/%s/mml/%s.csv" % (args.dataset, recommender),
                                   baseline=True)
 
         print("--- %s seconds ---" % (time.time() - start_time))
