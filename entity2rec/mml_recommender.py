@@ -138,7 +138,6 @@ class MMLRecommender(object):
                     item_score_pairs = line_split[1].replace('[', '').replace(']', '').split(',')
 
                     for item_score in item_score_pairs:
-                        print(item_score)
 
                         item_score_split = item_score.split(':')
 
@@ -147,8 +146,6 @@ class MMLRecommender(object):
                         item = index[item_ind]
 
                         score = item_score_split[1]
-
-                        print(item, score)
 
                         score_file.write('%s %s %s\n' % (user, item, score))
 
