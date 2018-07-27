@@ -25,7 +25,7 @@ class MMLRecommender(object):
                 item = line_split[1]
                 score = line_split[2]
 
-                model[(user, item)] = float(score)
+                model[(user, item)] = np.float32(score)
 
         return model
 
