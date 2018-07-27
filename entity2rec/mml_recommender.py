@@ -5,7 +5,6 @@ import argparse
 import subprocess
 import os
 
-
 class MMLRecommender(object):
 
     def __init__(self, recommender):
@@ -48,9 +47,7 @@ class MMLRecommender(object):
 
     def predict(self, x_test, qids_test):
 
-        preds = x_test
-
-        return preds
+        return x_test
 
     @staticmethod
     def data_preprocessing(dataset):
