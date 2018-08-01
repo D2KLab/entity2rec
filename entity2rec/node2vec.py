@@ -132,14 +132,20 @@ class Node2Vec(object):
         Learn embeddings by optimizing the Skipgram objective using SGD.
         """
 
-        self._simulate_walks()  # simulate random walks
+        walks = self._simulate_walks()  # simulate random walks
 
-        model = Word2Vec(self._walks, size=self.dimensions, window=self.window_size, min_count=0,
+        model = Word2Vec(walks, size=self.dimensions, window=self.window_size, min_count=0,
                          workers=self.workers, iter=self.iter, negative=25, sg=1)
 
         print("defined model using w2v")
 
         model.wv.save_word2vec_format(output, binary=True)
+
+        # free memory
+        del walks
+        self.alias_nodes = None
+        self.alias_edges = None
+        self.G = None
 
         print("saved model in word2vec binary format")
 
@@ -174,7 +180,7 @@ class Node2Vec(object):
         G = self.G
         nodes = list(G.nodes())
 
-        self._walks = []
+        walks = []
 
         print('Walk iteration:')
 
@@ -192,7 +198,9 @@ class Node2Vec(object):
 
                 c += 1
 
-                self._walks.append(self.node2vec_walk(start_node=node))
+                walks.append(self.node2vec_walk(start_node=node))
+
+        return walks
 
     def preprocess_transition_probs(self):
         """
