@@ -5,6 +5,7 @@ import argparse
 import subprocess
 import os
 
+
 class MMLRecommender(object):
 
     def __init__(self, recommender):
@@ -265,15 +266,20 @@ if __name__ == '__main__':
 
             print(file)
 
-            subprocess.check_output(["./benchmarks/MyMediaLite-3.11/bin/item_recommendation",
-                                     "--training-file=benchmarks/MyMediaLite-3.11/data/%s/train.mml" % args.dataset,
-                                     "--test-file=benchmarks/MyMediaLite-3.11/data/%s/test.mml" % args.dataset,
-                                     "--recommender=%s" % recommender,
-                                     "--load-model=benchmarks/MyMediaLite-3.11/models/%s/%s" % (args.dataset, recommender),
-                                     "--rating-threshold=%s" % args.threshold,
-                                     "--prediction-file=benchmarks/MyMediaLite-3.11/predictions/%s/%s_%s" % (args.dataset, recommender, file),
-                                     "--candidate-items=benchmarks/MyMediaLite-3.11/candidates/%s/%s" % (args.dataset, file),
-                                     "--test-users=benchmarks/MyMediaLite-3.11/users/%s/%s" % (args.dataset, file)])
+            if "%s_%s" % (recommender, file) not in os.listdir('benchmarks/MyMediaLite-3.11/predictions/%s' % args.dataset):
+
+                subprocess.check_output(["./benchmarks/MyMediaLite-3.11/bin/item_recommendation",
+                                         "--training-file=benchmarks/MyMediaLite-3.11/data/%s/train.mml" % args.dataset,
+                                         "--test-file=benchmarks/MyMediaLite-3.11/data/%s/test.mml" % args.dataset,
+                                         "--recommender=%s" % recommender,
+                                         "--load-model=benchmarks/MyMediaLite-3.11/models/%s/%s" % (args.dataset, recommender),
+                                         "--rating-threshold=%s" % args.threshold,
+                                         "--prediction-file=benchmarks/MyMediaLite-3.11/predictions/%s/%s_%s" % (args.dataset, recommender, file),
+                                         "--candidate-items=benchmarks/MyMediaLite-3.11/candidates/%s/%s" % (args.dataset, file),
+                                         "--test-users=benchmarks/MyMediaLite-3.11/users/%s/%s" % (args.dataset, file)])
+
+            else:
+                print('file already exists')
 
         # concatenate the outputs into a single file
         os.system("cat benchmarks/MyMediaLite-3.11/predictions/%s/%s_* >  "
@@ -285,7 +291,6 @@ if __name__ == '__main__':
 
         # initialize MyMediaLite recommender
         mml_rec = MMLRecommender(recommender)
-
 
         # compute e2rec features
         x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
