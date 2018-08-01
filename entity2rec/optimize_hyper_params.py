@@ -3,6 +3,7 @@ import numpy as np
 from entity2rec import Entity2Rec
 from evaluator import Evaluator
 from parse_args import parse_args
+import os
 
 np.random.seed(1)  # fixed seed for reproducibility
 
@@ -27,11 +28,11 @@ p_v = [1, 4]
 
 q_v = [1, 4]
 
-c_v = [10]
+c_v = [30, 50]
 
-walks_v = [50]
+walks_v = [100]
 
-length_v = [50, 100]
+length_v = [100]
 
 scores = {}
 
@@ -78,15 +79,20 @@ for d in d_v:
 
                         print("--- %s seconds ---" % (time.time() - start_time))
 
-with open('entity2rec_hyper_opt_%s.csv' %args.dataset, 'w') as hyper_opt_write:
+path = 'results/%s/entity2rec/' % args.dataset
 
-    hyper_opt_write.write('p,q,c,d,walks,length,P@5,P@10,MAP,R@5,R@10,NDCG,MRR\n')
+os.makedirs(path, exist_ok=True)
 
-    for (p, q, c, d, walks, length), scores in scores.items():
+with open(path+'hyper_params_opt.csv', 'w') as hyper_opt_write:
 
-        hyper_opt_write.write('%.2f,%.2f,%d,%d,%d,%d' % (p, q, c, d, walks, length))
+    hyper_opt_write.write('p,q,c,d,walks,length,P@5,P@10,MAP,R@5,R@10,NDCG,MRR,SER@5,SER@10\n')
 
-        for name, score in scores[0:-1]:
-            hyper_opt_write.write('%f,' % score)
+    for (p, q, c, d, walks, length), results in scores.items():
 
-        hyper_opt_write.write('%f\n' % scores[-1][1])
+        hyper_opt_write.write('%.2f,%.2f,%d,%d,%d,%d,' % (p, q, c, d, walks, length))
+
+        for (strategy_name, metric_name), (mean, var) in results.items():
+            if strategy_name == 'l2r':
+                hyper_opt_write.write('%.4f,' % mean)
+
+        hyper_opt_write.write('\n')
