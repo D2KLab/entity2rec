@@ -238,7 +238,7 @@ if __name__ == '__main__':
 
     # initialize evaluator
 
-    evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
+    evaluat = Evaluator(implicit=args.implicit, threshold=threshold, all_unrated_items=args.all_unrated_items)
 
     if args.first_time:
 
@@ -297,11 +297,11 @@ if __name__ == '__main__':
         mml_rec = MMLRecommender(recommender)
 
 
-        # compute e2rec features
+        # compute e2rec features, enforce one worker because of a bug in joblib
         x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test,\
         x_val, y_val, qids_val, items_val = evaluat.features(mml_rec, args.train, args.test,
                                                              validation=False,
-                                                             n_jobs=args.workers,
+                                                             n_jobs=1,
                                                              supervised=False)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
