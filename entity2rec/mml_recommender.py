@@ -11,8 +11,6 @@ class MMLRecommender(object):
     def __init__(self, recommender):
 
         self.mml_model = self._read_scores('benchmarks/MyMediaLite-3.11/%s_scores.txt' % recommender)
-        print('size of mml_model')
-        print(sys.getsizeof(self.mml_model))
 
     def _read_scores(self, file):
         
@@ -244,6 +242,7 @@ if __name__ == '__main__':
 
         # remove previous results if any for a fresh start
         os.system("rm benchmarks/MyMediaLite-3.11/predictions/%s/*.txt" % args.dataset)
+        os.system("rm benchmarks/MyMediaLite-3.11/models/%s/*" % args.dataset)
 
         #  create mml compatible data and index
         MMLRecommender.data_preprocessing(args.dataset)
@@ -267,8 +266,6 @@ if __name__ == '__main__':
                                      "--recommender=%s" % recommender,
                                      "--save-model=benchmarks/MyMediaLite-3.11/models/%s/%s" % (args.dataset, recommender),
                                      "--rating-threshold=%s" % threshold])
-
-        #os.system("rm benchmarks/MyMediaLite-3.11/predictions/%s/*.txt" % args.dataset)
 
         # generate predictions and save them to file
         for file in os.listdir('benchmarks/MyMediaLite-3.11/users/%s' % args.dataset):
