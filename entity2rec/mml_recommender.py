@@ -238,7 +238,7 @@ if __name__ == '__main__':
 
     # initialize evaluator
 
-    evaluat = Evaluator(implicit=args.implicit, threshold=threshold, all_unrated_items=args.all_unrated_items)
+    evaluat = Evaluator(implicit=implicit, threshold=threshold, all_unrated_items=args.all_unrated_items)
 
     if args.first_time:
 
