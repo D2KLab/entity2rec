@@ -67,7 +67,7 @@ class MMLRecommender(object):
 
                 items_list.append(line_split[1])
 
-        items_list = list(set(items_list))  # remove duplicates
+        items_list = sorted(list(set(items_list)))  # remove duplicates, sort for reproducibility
 
         item_index = {i: item for i, item in enumerate(items_list)}  # create index
 
@@ -185,6 +185,8 @@ def parse_args():
 
     parser.add_argument('--first_time', dest='first_time', default=False, action='store_true')
 
+    parser.add_argument('--num_users', dest='num_users', default=False, type=int)
+
     return parser.parse_args()
 
 
@@ -237,7 +239,7 @@ if __name__ == '__main__':
     # initialize evaluator
 
     evaluat = Evaluator(implicit=implicit, threshold=threshold, all_unrated_items=args.all_unrated_items)
-
+    
     if args.first_time:
 
         # remove previous results if any for a fresh start
@@ -252,9 +254,9 @@ if __name__ == '__main__':
         evaluat.write_candidates(args.train, args.test, 'benchmarks/MyMediaLite-3.11/users/%s' % args.dataset,
                                  'benchmarks/MyMediaLite-3.11/candidates/%s' % args.dataset,
                                  'benchmarks/MyMediaLite-3.11/item_index_%s.txt' % args.dataset)
-
+    
     for recommender in recommenders:
-
+        
         print('%s' % recommender)
 
         if '%s' % recommender not in 'benchmarks/MyMediaLite-3.11/models/%s' % args.dataset:
@@ -287,9 +289,11 @@ if __name__ == '__main__':
             else:
                 print('file already exists')
 
+        os.system("cat benchmarks/MyMediaLite-3.11/predictions/%s/%s_* > benchmarks/MyMediaLite-3.11/%s_ranked_predictions.txt" % (args.dataset, recommender, recommender))
+        
         # parse the output
         MMLRecommender.prediction_parser(recommender, args.dataset)
-
+        
         # initialize MyMediaLite recommender
         mml_rec = MMLRecommender(recommender)
 
@@ -299,7 +303,8 @@ if __name__ == '__main__':
         x_val, y_val, qids_val, items_val = evaluat.features(mml_rec, args.train, args.test,
                                                              validation=False,
                                                              n_jobs=1,
-                                                             supervised=False)
+                                                             supervised=False,
+                                                             n_users=args.num_users)
 
         print('Finished computing features after %s seconds' % (time.time() - start_time))
 
