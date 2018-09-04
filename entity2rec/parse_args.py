@@ -87,7 +87,7 @@ def parse_args():
     parser.add_argument('--metric', dest='metric', default='P',
                         help='Metric to optimize in the training')
 
-    parser.add_argument('--N', dest='N', type=int, default=None,
+    parser.add_argument('--N', dest='N', type=int, default=5,
                         help='Cutoff to estimate metric')
 
     parser.add_argument('--threshold', dest='threshold', default=4, type=int,
