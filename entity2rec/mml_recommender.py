@@ -97,11 +97,11 @@ class MMLRecommender(object):
 
                         train_mml_file.write('%s %d %s %s\n' % (user, index, rating, timestamp))
 
-        convert_to_mml(train_data, "benchmarks/MyMediaLite-3.11/%s/train.mml" % dataset, index_item)
+        convert_to_mml(train_data, "benchmarks/MyMediaLite-3.11/data/%s/train.mml" % dataset, index_item)
 
-        convert_to_mml(val_data, "benchmarks/MyMediaLite-3.11/%s/val.mml" % dataset, index_item)
+        convert_to_mml(val_data, "benchmarks/MyMediaLite-3.11/data/%s/val.mml" % dataset, index_item)
 
-        convert_to_mml(test_data, "benchmarks/MyMediaLite-3.11/%s/test.mml" % dataset, index_item)
+        convert_to_mml(test_data, "benchmarks/MyMediaLite-3.11/data/%s/test.mml" % dataset, index_item)
 
     @staticmethod
     def prediction_parser(recommender, dataset):

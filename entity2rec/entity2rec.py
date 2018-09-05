@@ -229,7 +229,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
         return features
 
     def fit(self, x_train, y_train, qids_train, x_val=None, y_val=None, qids_val=None,
-            optimize='NDCG', N=None, lr=0.1, n_estimators=100, max_depth=5,
+            optimize='P', N=5, lr=0.1, n_estimators=100, max_depth=5,
             max_features=None, user_to_cluster=None):
 
         # choose the metric to optimize during the fit process
