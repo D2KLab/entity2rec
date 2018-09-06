@@ -9,10 +9,12 @@ import time
 import argparse
 import sys
 from operator import itemgetter
+import random
+
 
 class FMRec:
 
-    def __init__(self, dataset, training, test, config='config/properties.json', lr=0.001, num_factors=10, num_iter=100, threshold=4):
+    def __init__(self, dataset, training, test, config='config/properties.json', lr=0.001, num_factors=10, num_iter=100, threshold=4, implicit=False):
 
         self.dataset = dataset
 
@@ -20,17 +22,21 @@ class FMRec:
 
         self.properties = []
 
-        self.threshold = threshold
+        self.implicit = implicit
+
+        if self.implicit:
+
+            self.threshold = 0.5
+
+        else:
+
+            self.threshold = threshold
 
         self._set_properties()
 
         self._read_item_attributes()
 
         print('finished reading item attributes')
-
-        #self.model = pylibfm.FM(num_factors=num_factors, num_iter=num_iter, verbose=True,
-        #                        task="regression", initial_learning_rate=lr,
-        #                        learning_rate_schedule="optimal")
 
         self.model = pylibfm.FM(num_factors=num_factors, num_iter=num_iter, verbose=True,
                                 task="classification", initial_learning_rate=lr,
@@ -39,6 +45,37 @@ class FMRec:
         self.x_train, self.y_train, self.train_users, self.train_items = self._load_data(training)
 
         self.x_test, self.y_test, self.test_users, self.test_items = self._load_data(test)
+
+        if self.implicit:  # need to generate negative candidates for training
+
+            num_negative_candidates = 100
+
+            all_items = self.train_items.union(self.test_items)
+
+            unrated_items = [item for item in all_items if
+                               item not in self.train_items]
+
+            unrated_items = sorted(unrated_items)
+
+            for user in self.train_users:
+
+                negative_candidates = list(random.sample(unrated_items, num_negative_candidates))
+
+                for item in negative_candidates:
+
+                    self.x_train.append(self._fetch_attributes(user, item))
+
+                    self.y_train.append(0.)
+
+            for user in self.test_users:
+
+                negative_candidates = list(random.sample(unrated_items, num_negative_candidates))
+
+                for item in negative_candidates:
+
+                    self.x_test.append(self._fetch_attributes(user, item))
+
+                    self.y_test.append(0.)
 
         print('finished reading data')
 
@@ -292,7 +329,8 @@ if __name__ == '__main__':
                                                              lr=lr,
                                                              num_factors=n_factors,
                                                              num_iter=n_iters,
-                                                             threshold=args.threshold)
+                                                             threshold=args.threshold,
+                                                             implicit=args.implicit)
 
                     x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
                     x_val, y_val, qids_val, items_val = evaluat.features(fm_rec, args.train, args.validation,
@@ -307,11 +345,11 @@ if __name__ == '__main__':
 
         lr, n_factors, n_iters = max(results.items(), key=itemgetter(1))[0]
 
-    print('optimal parameters are:\n')
-    print('lr: ', lr,'n_factors: ', n_factors,'n_iters: ', n_iters)
-    print('evaluating the model on the test set usign optimal parameters...')
+        print('optimal parameters are:\n')
+        print('lr: ', lr,'n_factors: ', n_factors,'n_iters: ', n_iters)
+        print('evaluating the model on the test set usign optimal parameters...')
 
-    fm_rec = FMRec(args.dataset, args.train, args.test, lr=lr, num_factors=n_factors, num_iter=n_iters, threshold=args.threshold)
+    fm_rec = FMRec(args.dataset, args.train, args.test, lr=lr, num_factors=n_factors, num_iter=n_iters, threshold=args.threshold, implicit=args.implicit)
 
     x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
     x_val, y_val, qids_val, items_val = evaluat.features(fm_rec, args.train, args.test,
