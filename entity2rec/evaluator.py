@@ -219,17 +219,17 @@ class Evaluator(object):
 
             print('Compute features for testing')
             x_test, y_test, qids_test, items_test = self._compute_features_parallel('test', recommender,
-                                                                                    users_list_chunks, n_jobs)
+                                                                                    users_list_chunks, n_jobs, users_list)
 
             if supervised:
 
                 print('Compute features for training')
                 x_train, y_train, qids_train, items_train = self._compute_features_parallel('train', recommender,
-                                                                                            users_list_chunks, n_jobs)
+                                                                                            users_list_chunks, n_jobs, users_list)
 
                 print('Compute features for validation')
                 x_val, y_val, qids_val, items_val = self._compute_features_parallel('val', recommender,
-                                                                                    users_list_chunks, n_jobs)
+                                                                                    users_list_chunks, n_jobs, users_list)
 
             else:
 
@@ -243,7 +243,7 @@ class Evaluator(object):
 
                 print('Compute features for training')
                 x_train, y_train, qids_train, items_train = self._compute_features_parallel('train', recommender,
-                                                                                            users_list_chunks, n_jobs)
+                                                                                            users_list_chunks, n_jobs, users_list)
 
             else:
 
@@ -252,7 +252,7 @@ class Evaluator(object):
             print('Compute features for testing')
 
             x_test, y_test, qids_test, items_test = self._compute_features_parallel('test', recommender,
-                                                                                    users_list_chunks, n_jobs)
+                                                                                    users_list_chunks, n_jobs, users_list)
 
             x_val, y_val, qids_val, items_val = None, None, None, None
 
@@ -260,7 +260,7 @@ class Evaluator(object):
                x_test, y_test, qids_test, items_test,\
                x_val, y_val, qids_val, items_val
 
-    def _compute_features_parallel(self, data, recommender, users_list_chunks, n_jobs):
+    def _compute_features_parallel(self, data, recommender, users_list_chunks, n_jobs, users_list):
 
         if n_jobs > 1: # parallel
 
@@ -268,29 +268,25 @@ class Evaluator(object):
                                                                               (data, recommender, users_list)
                                                                               for users_list in users_list_chunks)
 
-        else: # sequential 
+            x_chunks = [user_item_features[i][0] for i in range(n_jobs)]
 
-            user_item_features = []
+            y_chunks = [user_item_features[i][1] for i in range(n_jobs)]
 
-            for users_list in users_list_chunks:
+            qids_chunks = [user_item_features[i][2] for i in range(n_jobs)]
 
-                user_item_features.append(self._compute_features(data, recommender, users_list))
+            items_chunks = [user_item_features[i][3] for i in range(n_jobs)]
 
-        x_chunks = [user_item_features[i][0] for i in range(n_jobs)]
+            x = np.concatenate(x_chunks, axis=0)
 
-        y_chunks = [user_item_features[i][1] for i in range(n_jobs)]
+            y = np.concatenate(y_chunks, axis=0)
 
-        qids_chunks = [user_item_features[i][2] for i in range(n_jobs)]
+            qids = np.concatenate(qids_chunks, axis=0)
 
-        items_chunks = [user_item_features[i][3] for i in range(n_jobs)]
+            items = np.concatenate(items_chunks, axis=0)
 
-        x = np.concatenate(x_chunks, axis=0)
+        else: # sequential
 
-        y = np.concatenate(y_chunks, axis=0)
-
-        qids = np.concatenate(qids_chunks, axis=0)
-
-        items = np.concatenate(items_chunks, axis=0)
+            x, y, qids, items = self._compute_features(data, recommender, users_list)
 
         return x, y, qids, items
 
