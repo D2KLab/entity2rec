@@ -162,13 +162,29 @@ class Evaluator(object):
 
         unrated_items = sorted(unrated_items)
 
-        if self.all_unrated_items and data != 'train':
+        if self.all_unrated_items:
 
-            candidate_items = unrated_items  # all unrated items in the train
+            candidate_items = unrated_items
 
-        else:  # for training set features, need to include training items
+        else:
 
             candidate_items = self.all_items
+
+        # candidate items for the training set
+        if data == 'train':
+
+            if self.implicit:  # sample negative items randomly
+
+                negative_candidates = list(random.sample(candidate_items, num_negative_candidates))
+
+                candidate_items = negative_candidates + rated_items_train
+
+            else:  # use positive and negative feedback from the training set
+
+                items_rated_by_user = self.items_rated_by_user_train[user]
+
+                candidate_items = items_rated_by_user
+
 
         shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
