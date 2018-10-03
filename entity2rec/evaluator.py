@@ -10,6 +10,7 @@ import numpy as np
 from random import shuffle
 from collections import Counter
 import os
+import pickle
 
 def parse_line(line):
 
@@ -167,17 +168,7 @@ class Evaluator(object):
 
         else:  # for training set features, need to include training items
 
-            if self.implicit:  # sample negative items randomly
-
-                negative_candidates = list(random.sample(unrated_items, num_negative_candidates))
-
-                candidate_items = negative_candidates + rated_items_train
-
-            else:  # use positive and negative feedback from the training set
-
-                items_rated_by_user = self.items_rated_by_user_train[user]
-
-                candidate_items = items_rated_by_user
+            candidate_items = self.all_items
 
         shuffle(candidate_items)  # relevant and non relevant items are shuffled
 
@@ -550,3 +541,72 @@ class Evaluator(object):
         assert (len(users_list) >= n_jobs), "Number of users cannot be lower than number of workers"
 
         return users_list
+
+    def compute_item_to_item_similarity(self, recommender, training, test, validation=None, n_users=False, n_jobs=4,
+                                        supervised=False, max_n_feedback=False):
+
+        # compute features
+        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
+        x_val, y_val, qids_val, items_val = self.features(recommender, training, test, supervised=supervised,
+                                                          validation=validation, n_users=n_users,
+                                                          n_jobs=n_jobs, max_n_feedback=max_n_feedback)
+
+
+        item_index = {item: index for index, item in enumerate(items_test)}
+
+        # user-item relatedness matrix
+        predictions = recommender.predict(x_test, qids_test)
+
+        # user-item relatedness dictionary
+        user_item_relatedness = {}
+
+        for i, user_id in enumerate(qids_test):
+
+            item = items_test[i]
+
+            user_item_relatedness[str(user_id), item] = predictions[i]
+
+        # create item-to-item dictionary
+
+        W = {}
+
+        for seed_item in item_index.keys():
+
+            d = {}
+
+            for candidate_item in item_index.keys():
+
+                try:
+
+                    users_liking_item = self.users_liking_an_item_dict[seed_item]
+
+                    print(seed_item, users_liking_item)
+
+                # item not in the training set
+                except KeyError:
+
+                    continue
+
+                d[candidate_item] = np.mean([user_item_relatedness[u_id, candidate_item] for u_id in users_liking_item], axis=0)
+
+            # given the seed, returns a dictionary with item-score
+            W[seed_item] = d
+
+        with open('item_index', 'wb') as f:
+
+            pickle.dump(item_index, f, pickle.HIGHEST_PROTOCOL)
+
+        with open('item_to_item_matrix', 'wb') as f:
+
+            pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
+
+
+
+
+
+
+
+
+
+
+

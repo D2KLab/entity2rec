@@ -370,7 +370,13 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         else:
 
-            return self.model.predict(x_test)
+            if self.model:
+
+                return self.model.predict(x_test)
+
+            else:
+
+                return list(map(lambda x: np.mean(x), x_test))
 
     def save_model(self, model_file):
 
