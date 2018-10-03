@@ -580,8 +580,6 @@ class Evaluator(object):
 
                     users_liking_item = self.users_liking_an_item_dict[seed_item]
 
-                    print(seed_item, users_liking_item)
-
                 # item not in the training set
                 except KeyError:
 
