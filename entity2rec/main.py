@@ -50,7 +50,7 @@ e2rec = Entity2Rec(args.dataset, run_all=args.run_all, p=args.p, q=args.q,
 
 # initialize evaluator
 
-evaluat = Evaluator(implicit=args.implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
+evaluat = Evaluator(implicit=implicit, threshold=args.threshold, all_unrated_items=args.all_unrated_items)
 
 if not args.read_features:
     # compute e2rec features
