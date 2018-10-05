@@ -8,7 +8,7 @@ from joblib import Parallel, delayed
 import pyltr
 import numpy as np
 from random import shuffle
-from collections import Counter
+from collections import Counter, defaultdict
 import os
 import pickle
 
@@ -559,64 +559,89 @@ class Evaluator(object):
         return users_list
 
     def compute_item_to_item_similarity(self, recommender, training, test, validation=None, n_users=False, n_jobs=4,
-                                        supervised=False, max_n_feedback=False):
+                                        supervised=False, max_n_feedback=False, property_specif_emb=True):
 
-        # compute features
-        x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
-        x_val, y_val, qids_val, items_val = self.features(recommender, training, test, supervised=supervised,
-                                                          validation=validation, n_users=n_users,
-                                                          n_jobs=n_jobs, max_n_feedback=max_n_feedback)
-
-
-        item_index = {item: index for index, item in enumerate(items_test)}
-
-        # user-item relatedness matrix
-        predictions = recommender.predict(x_test, qids_test)
-
-        # user-item relatedness dictionary
-        user_item_relatedness = {}
-
-        for i, user_id in enumerate(qids_test):
-
-            item = items_test[i]
-
-            user_item_relatedness[str(user_id), item] = predictions[i]
-
-        # create item-to-item dictionary
-
-        W = {}
-
-        for seed_item in item_index.keys():
-
-            d = {}
-
-            for candidate_item in item_index.keys():
-
-                try:
-
-                    users_liking_item = self.users_liking_an_item_dict[seed_item]
-
-                # item not in the training set
-                except KeyError:
-
-                    continue
-
-                d[candidate_item] = np.mean([user_item_relatedness[u_id, candidate_item] for u_id in users_liking_item], axis=0)
-
-            # given the seed, returns a dictionary with item-score
-            W[seed_item] = d
-
-        with open('item_index', 'wb') as f:
-
-            pickle.dump(item_index, f, pickle.HIGHEST_PROTOCOL)
-
-        with open('item_to_item_matrix', 'wb') as f:
-
-            pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
+        
+        if not property_specif_emb:
+            # compute features
+            x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
+            x_val, y_val, qids_val, items_val = self.features(recommender, training, test, supervised=supervised,
+                                                              validation=validation, n_users=n_users,
+                                                              n_jobs=n_jobs, max_n_feedback=max_n_feedback)
 
 
+            item_index = {item: index for index, item in enumerate(items_test)}
 
+            # user-item relatedness matrix
+            predictions = recommender.predict(x_test, qids_test)
 
+            # user-item relatedness dictionary
+            user_item_relatedness = {}
+
+            for i, user_id in enumerate(qids_test):
+
+                item = items_test[i]
+
+                user_item_relatedness[str(user_id), item] = predictions[i]
+
+            # create item-to-item dictionary
+
+            W = {}
+
+            for seed_item in item_index.keys():
+
+                d = {}
+
+                for candidate_item in item_index.keys():
+
+                    try:
+
+                        users_liking_item = self.users_liking_an_item_dict[seed_item]
+
+                    # item not in the training set
+                    except KeyError:
+
+                        continue
+
+                    d[candidate_item] = np.mean([user_item_relatedness[u_id, candidate_item] for u_id in users_liking_item], axis=0)
+
+                # normalize the scores
+
+                tot_scores = sum(d.values())
+
+                for key, value in d.items():
+
+                    d[key] = value/tot_scores
+
+                # given the seed, returns a dictionary with item-score
+                W[seed_item] = d
+
+            with open('item_index', 'wb') as f:
+
+                pickle.dump(item_index, f, pickle.HIGHEST_PROTOCOL)
+
+            with open('item_to_item_matrix', 'wb') as f:
+
+                pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
+
+        else:
+
+            # defines all items
+            self._parse_data(training, test, validation=validation)
+
+            items = self.all_items
+
+            W = defaultdict(dict)
+
+            for i1 in items:
+
+                for i2 in items:
+
+                    W[i1][i2] = np.mean(recommender.collab_similarities(i1,i2))
+
+            with open('item_to_item_matrix', 'wb') as f:
+
+                pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
 
 
 
