@@ -624,6 +624,28 @@ class Evaluator(object):
 
                 pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
 
+            item_to_item_similarity_dict = {}
+
+            for seed, d in W.items():
+
+                c = {}
+
+                ranks = sorted(d, key=lambda x: d[x])
+
+                print(seed)
+
+                for key, value in d.items():
+
+                    c[key] = ranks.index(key)  # replace scores with ranking
+
+                print(c)
+
+                item_to_item_similarity_dict[seed] = c
+
+            with open('item_to_item_ranking', 'wb') as f:
+
+                pickle.dump(item_to_item_similarity_dict, f, pickle.HIGHEST_PROTOCOL)
+
         else:
 
             # defines all items
@@ -639,7 +661,7 @@ class Evaluator(object):
 
                     W[i1][i2] = np.mean(recommender.collab_similarities(i1,i2))
 
-            with open('item_to_item_matrix', 'wb') as f:
+            with open('item_to_item_similarity', 'wb') as f:
 
                 pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
 
