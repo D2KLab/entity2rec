@@ -7,15 +7,21 @@ import argparse
 
 class TuriRankingFM:
 
-    def __init__(self, dataset):
+    def __init__(self, dataset, dbpedia=False):
 
         self.dataset = dataset
 
         data = tc.SFrame.read_csv('datasets/'+'%s/FM/' %self.dataset
                                   +'train.dat', delimiter=' ')
 
-        items_data = tc.SFrame.read_csv('datasets/'+'%s/FM/' %self.dataset
-                                  +'items.dat', delimiter=' ')
+        if dbpedia:
+
+            items_data = tc.SFrame.read_csv('datasets/DB2Vec.txt', delimiter=' ')
+
+        else:
+
+            items_data = tc.SFrame.read_csv('datasets/'+'%s/FM/' %self.dataset
+                                      +'items.dat', delimiter=' ')
 
         self.model = tc.ranking_factorization_recommender.create(data,
                      user_id='user_id', item_id='item_id', item_data=items_data)
