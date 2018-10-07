@@ -96,8 +96,8 @@ class TuriRankingFM:
         parser.add_argument('--lr', dest='lr', type=float, default=0.001,
                             help='Starting value for the learning rate')
 
-        parser.add_argument('--hyper_opt', dest='hyper_opt', default=False, action='store_true',
-                    help='Sample of users for evaluation')
+        parser.add_argument('--dbpedia', dest='dbpedia', default=False, action='store_true',
+                    help='Use dbpedia embeddings as item data')
 
         return parser.parse_args()
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     evaluat = Evaluator(implicit=implicit, threshold=args.threshold,
                         all_unrated_items=args.all_unrated_items)
 
-    fm_rec = TuriRankingFM(args.dataset)
+    fm_rec = TuriRankingFM(args.dataset, dbpedia=args.dbpedia)
 
     x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
     x_val, y_val, qids_val, items_val = evaluat.features(fm_rec, args.train, args.test,
