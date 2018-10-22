@@ -53,5 +53,5 @@ e2rec = Entity2Rec(args.dataset, run_all=args.run_all, p=args.p, q=args.q,
 evaluat = Evaluator(implicit=implicit, threshold=args.threshold, all_unrated_items=False)
 
 
-evaluat.compute_item_to_item_similarity(e2rec, args.train, args.test, validation=args.validation,
+evaluat.compute_item_to_item_similarity(e2rec, args.train, args.test, args.dataset, validation=args.validation,
                                         n_users=args.num_users, n_jobs=args.workers, max_n_feedback=args.max_n_feedback)

@@ -558,7 +558,7 @@ class Evaluator(object):
 
         return users_list
 
-    def compute_item_to_item_similarity(self, recommender, training, test, validation=None, n_users=False, n_jobs=4,
+    def compute_item_to_item_similarity(self, recommender, training, test, dataset, validation=None, n_users=False, n_jobs=4,
                                         supervised=False, max_n_feedback=False, property_specif_emb=True):
 
         
@@ -642,7 +642,7 @@ class Evaluator(object):
 
                 item_to_item_similarity_dict[seed] = c
 
-            with open('item_to_item_ranking', 'wb') as f:
+            with open('datasets/%s/item_to_item_ranking' % dataset, 'wb') as f:
 
                 pickle.dump(item_to_item_similarity_dict, f, pickle.HIGHEST_PROTOCOL)
 
@@ -657,13 +657,17 @@ class Evaluator(object):
 
             for i1 in items:
 
+                print(i1)
+
                 for i2 in items:
 
                     W[i1][i2] = np.mean(recommender.collab_similarities(i1,i2))
 
-            with open('item_to_item_similarity', 'wb') as f:
+            with open('datasets/%s/item_to_item_similarity' % dataset, 'wb') as f:
 
                 pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
+
+
 
 
 
