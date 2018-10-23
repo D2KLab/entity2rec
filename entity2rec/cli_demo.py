@@ -11,53 +11,61 @@ start_time = time.time()
 
 args = parse_args()
 
-with open('datasets/'+args.dataset+'/item_to_item_matrix', 'rb') as f1:
+with open('datasets/'+args.dataset+'/item_to_item_similarity', 'rb') as f1:
   item_to_item_similarity_dict = pickle.load(f1)  # seed -> {item: score} 
 
 live_time = time.time()
 
-seed = 'asd'
-dicts = []
-seeds = set()
 N = 5
 
 while True:
 
-  print('Please enter seed item. The more seeds you provide, the better the recommendations. Enter stop when you want to stop.')
+    dicts = []
+    seeds = set()
 
-  seed = input()
+    while True:
 
-  if seed == 'stop':
+      print('Please enter seed item. The more seeds you provide, the better the recommendations. Enter stop when you want to stop.')
 
-    break
+      seed = input()
 
-  dicts.append(item_to_item_similarity_dict[seed])
-  seeds.add(seed)
+      if seed == 'stop':
 
-rec_time = time.time()
+        break
 
-final_dict = defaultdict(int)
+      if len(item_to_item_similarity_dict[seed]) > 0:
 
-l = len(dicts)
+        dicts.append(item_to_item_similarity_dict[seed])
+        seeds.add(seed)
 
-for d in dicts:
+      else:
 
-  for key, value in d.items():
+        print('Seed item not found. Enter another seed.')
 
-      final_dict[key] += value/l
+    rec_time = time.time()
 
-# remove seeds from the candidates
-candidates = [i for i in final_dict.keys() if i not in seeds]
+    final_dict = defaultdict(int)
 
-recs = heapq.nlargest(N, candidates, key=lambda x: final_dict[x])
+    l = len(dicts)
 
-print(recs)
+    for d in dicts:
 
-print('total time')
-print("--- %s seconds ---" % (time.time() - start_time))
+      for key, value in d.items():
 
-print('total live time')
-print("--- %s seconds ---" % (time.time() - live_time))
+          final_dict[key] += value/l
 
-print('total rec time')
-print("--- %s seconds ---" % (time.time() - rec_time))
+    # remove seeds from the candidates
+    candidates = [i for i in final_dict.keys() if i not in seeds]
+
+    recs = heapq.nlargest(N, candidates, key=lambda x: final_dict[x])
+
+    print(recs)
+
+    print('total time')
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+    print('total live time')
+    print("--- %s seconds ---" % (time.time() - live_time))
+
+    print('total rec time')
+    print("--- %s seconds ---" % (time.time() - rec_time))
