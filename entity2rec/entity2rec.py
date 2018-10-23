@@ -10,7 +10,6 @@ import sys
 sys.path.append('.')
 from metrics import precision_at_n, mrr, recall_at_n
 from collections import defaultdict
-from sklearn import preprocessing
 import heapq
 
 
@@ -135,9 +134,9 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         for prop in collaborative_properties:
 
-            sims.append(self.relatedness_score(prop.name, user, item))
+            sims.append(self.relatedness_score(prop.name, [user], [item]))
 
-        return list(sims)
+        return sims
 
     def content_similarities(self, user, item, items_liked_by_user):
 
@@ -149,23 +148,15 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         if not items_liked_by_user:  # no past positive feedback
 
-            sims = np.zeros(len(content_properties))
+            sims = [0. for i in range(len(content_properties))]
 
         else:
 
             for prop in content_properties:  # append a list of property-specific scores
 
-                sims_prop = []
+                sims.append(self.relatedness_score(prop.name, items_liked_by_user, [item]))
 
-                for past_item in items_liked_by_user:
-
-                    sims_prop.append(self.relatedness_score(prop.name, past_item, item))
-
-                s = np.mean(sims_prop)
-
-                sims.append(s)
-
-        return list(sims)
+        return sims
 
     def social_similarities(self, user, item, users_liking_the_item):
 
@@ -177,23 +168,15 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         if not users_liking_the_item:
 
-            sims = np.zeros(len(social_properties))
+            sims = [0. for i in range(len(social_properties))]
 
         else:
 
             for prop in social_properties:  # append a list of property-specific scores
 
-                sims_prop = []
+                sims.append(self.relatedness_score(prop.name, users_liking_the_item, [user]))
 
-                for past_user in users_liking_the_item:
-
-                    sims_prop.append(self.relatedness_score(prop.name, past_user, user))
-
-                s = np.mean(sims_prop)
-
-                sims.append(s)
-
-        return list(sims)
+        return sims
 
     def _compute_scores(self, user, item, items_liked_by_user, users_liking_the_item):
 
