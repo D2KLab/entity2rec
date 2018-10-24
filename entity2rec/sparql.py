@@ -115,6 +115,51 @@ class Sparql(object):
 
         return uri
 
+    @staticmethod
+    def get_item_metadata(uri):
+
+        sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+
+        sparql.setQuery("""select ?label ?description ?abstract ?thumbnail ?homepage
+                        where {
+                        <%s> <http://dbpedia.org/property/label> ?label .
+                        <%s> <http://purl.org/dc/terms/description> ?description .
+                        <%s> <http://dbpedia.org/ontology/thumbnail> ?thumbnail .
+                        <%s> <http://xmlns.com/foaf/0.1/homepage> ?homepage .
+
+                         FILTER (lang(?description) = 'en')
+
+                         OPTIONAL {
+                           <%s> <http://dbpedia.org/ontology/abstract> ?abstract .
+                           FILTER (lang(?abstract) = 'en')
+                         }
+
+                        }""" % (uri, uri, uri, uri, uri))
+
+        sparql.setReturnFormat(JSON)
+
+        print
+
+        try:
+
+            result_raw = sparql.query().convert()['results']['bindings'][0]
+
+            result = {}
+
+            for key, value in result_raw.items():
+
+                print(key, value)
+
+                result[key] = value['value']
+
+        except:
+
+            result = None
+
+        return result
+
+
+
 
 if __name__ == '__main__':
 
