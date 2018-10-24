@@ -7,6 +7,8 @@ import logging
 from flask import Flask
 from flask import request
 import json
+from pymongo import MongoClient
+import random
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,7 +27,50 @@ def load_model():
 
     with open('datasets/'+dataset+'/item_to_item_matrix', 'rb') as f1:
         global item_to_item_similarity_dict
-        item_to_item_similarity_dict = pickle.load(f1)  # seed -> {item: score} 
+        item_to_item_similarity_dict = pickle.load(f1)  # seed -> {item: score}
+
+@app.before_first_request
+def read_item_metadata():
+
+    global items
+    items = set()
+
+    with open('datasets/'+dataset+'/all.dat') as all_ratings:
+
+        for line in all_ratings:
+            line_split = line.strip('\n').split(' ')
+            items.add(line_split[1])
+
+    global item_metadata
+    item_metadata = {}
+
+    for item in items:
+
+        item_metadata[item] = Sparql.get_item_metadata(item)
+
+    global num_items
+    num_items = len(item_metadata)
+
+@app.route('/entity2rec/' + version_api + "/onboarding", methods=['GET'])
+def onboarding():
+
+    out = {}
+
+    out['user_id'] = time.time()  # FIXME
+
+    number_of_samples = 1000
+
+    if num_items < number_of_samples:
+
+        number_of_samples = num_items
+
+    for sample in random.sample(item_metadata.items(), number_of_samples):
+
+        out[sample[0]] = sample[1]
+
+    out_json = json.dumps(out, indent=4, sort_keys=True)
+
+    return out_json
 
 @app.route('/entity2rec/' + version_api + "/recs", methods=['POST'])
 def recommend():
@@ -38,8 +83,9 @@ def recommend():
 
     try:
         seed=content['seed']
+        user_id=content['user_id']
     except KeyError:
-        raise ValueError('Please provide a seed item.')
+        raise ValueError('Please provide a seed item and a user_id.')
 
     rec_time = time.time()
 
@@ -55,13 +101,13 @@ def recommend():
 
     out = {}
 
-    out['user_id'] = time.time()  # FIXME
-
     out['recs'] = []
 
     for r in recs:
 
-        out['recs'].append({r: Sparql.get_item_metadata(r)})
+        out['recs'].append({r: item_metadata[r]})
+
+    out['user_id'] = user_id
 
     out_json = json.dumps(out, indent=4, sort_keys=True)
 
@@ -70,6 +116,29 @@ def recommend():
 
     return out_json
 
+@app.route('/entity2rec/' + version_api + "/feedback", methods=['POST'])
+def feedback():
+
+    content = request.get_json(silent=True)
+
+    try:
+        uri=content['uri']
+        user_id=content['user_id']
+        feedback=content['feedback']
+        position=content['position']
+
+    except KeyError:
+        raise ValueError('Please provide a uri, user_id,feedback and position of the item.')
+
+    content['timestamp'] = time.time()
+
+    connection = MongoClient('localhost', 27017)
+    db = connection.db
+    collection = db.feedback
+
+    collection.save(content)
+
+    return 'ok'
 
 if __name__ == '__main__':
 
