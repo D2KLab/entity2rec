@@ -7,7 +7,7 @@ import argparse
 
 class TuriRankingFM:
 
-    def __init__(self, dataset, dbpedia=False):
+    def __init__(self, dataset, implicit, dbpedia=False):
 
         self.dataset = dataset
 
@@ -16,22 +16,29 @@ class TuriRankingFM:
 
         if dbpedia:
 
-            items_data = tc.SFrame.read_csv('datasets/DB2Vec.txt', delimiter=' ')
+            items_data = tc.SFrame.read_csv('datasets/DB2Vec.txt', delimiter=' ', na_values='NAN')
 
         else:
 
             items_data = tc.SFrame.read_csv('datasets/'+'%s/FM/' %self.dataset
-                                      +'items.dat', delimiter=' ')
+                                      +'items.dat', delimiter=' ', na_values='NAN')
 
-        self.model = tc.ranking_factorization_recommender.create(data,
-                     user_id='user_id', item_id='item_id', item_data=items_data)
+        if implicit:
+
+            self.model = tc.ranking_factorization_recommender.create(data,
+                        user_id='user_id', item_id='item_id', item_data=items_data, random_seed=1)
+
+        else:
+
+            self.model = tc.ranking_factorization_recommender.create(data,
+                        user_id='user_id', item_id='item_id', target='rating', item_data=items_data, random_seed=1)
 
 
     def compute_user_item_features(self, user, item, items_liked_by_user, users_liking_the_item):
 
         try:
 
-            features = self.model.recommend(users=[user], items=[item])['score']  # user item relatedness from fm model
+            features = self.model.recommend(users=[user], items=item, k=len(item))  # user item relatedness from fm model
 
         except KeyError:  # do not have user item pair in embedding
 
@@ -134,7 +141,7 @@ if __name__ == '__main__':
     evaluat = Evaluator(implicit=implicit, threshold=args.threshold,
                         all_unrated_items=args.all_unrated_items)
 
-    fm_rec = TuriRankingFM(args.dataset, dbpedia=args.dbpedia)
+    fm_rec = TuriRankingFM(args.dataset, implicit, dbpedia=args.dbpedia)
 
     x_train, y_train, qids_train, items_train, x_test, y_test, qids_test, items_test, \
     x_val, y_val, qids_val, items_val = evaluat.features(fm_rec, args.train, args.test,
