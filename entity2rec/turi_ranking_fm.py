@@ -16,12 +16,13 @@ class TuriRankingFM:
 
         if dbpedia:
 
-            items_data = tc.SFrame.read_csv('datasets/DB2Vec.txt', delimiter=' ')
+            items_data = tc.SFrame.read_csv('datasets/DB2Vec.txt', delimiter=' ', na_values='NAN')
 
         else:
 
             items_data = tc.SFrame.read_csv('datasets/'+'%s/FM/' %self.dataset
-                                      +'items.dat', delimiter=' ')
+                                      +'items.dat', delimiter=' ', na_values='NAN')
+
 
         self.model = tc.ranking_factorization_recommender.create(data,
                      user_id='user_id', item_id='item_id', item_data=items_data)
