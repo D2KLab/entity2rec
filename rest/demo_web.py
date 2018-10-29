@@ -18,13 +18,14 @@ start_time = time.time()
 
 version_api = '0.1'
 
-dataset = 'item_to_item_test'
+dataset = 'LastFM'
 
 item_to_item_similarity_dict = {}
 
-@app.before_first_request
+#@app.before_first_request
 def load_model():
 
+    # open item to item similarity matrix and read into dictionary
     with open('datasets/'+dataset+'/item_to_item_matrix', 'rb') as f1:
         global item_to_item_similarity_dict
         item_to_item_similarity_dict = pickle.load(f1)  # seed -> {item: score}
@@ -32,6 +33,7 @@ def load_model():
 @app.before_first_request
 def read_item_metadata():
 
+    # reads list of item in the dataset
     global items
     items = set()
 
@@ -41,15 +43,24 @@ def read_item_metadata():
             line_split = line.strip('\n').split(' ')
             items.add(line_split[1])
 
+    print(items)
+    # reads items metadata from sparql endpoint and keeps them in memory
     global item_metadata
     item_metadata = {}
 
     for item in items:
 
-        item_metadata[item] = Sparql.get_item_metadata(item)
+        metadata = Sparql.get_item_metadata(item)
+
+        print(metadata)
+
+        if metadata:  # skip items with missing metadata
+
+            item_metadata[item] = metadata
 
     global num_items
     num_items = len(item_metadata)
+    print(num_items)
 
 @app.route('/entity2rec/' + version_api + "/onboarding", methods=['GET'])
 def onboarding():
@@ -95,7 +106,7 @@ def recommend():
 
     # remove seed from candidate items
 
-    candidates = [i for i in d.keys() if i != seed]
+    candidates = [i for i in item_metadata.keys() if i != seed]
 
     recs = heapq.nlargest(N, candidates, key=lambda x: d[x])
 
