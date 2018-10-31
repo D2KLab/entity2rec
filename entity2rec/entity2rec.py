@@ -134,7 +134,7 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
         for prop in collaborative_properties:
 
-            sims.append(self.relatedness_score(prop.name, [user], [item]))
+            sims.append(self.relatedness_score(prop.name, user, item))
 
         return sims
 
@@ -154,7 +154,15 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             for prop in content_properties:  # append a list of property-specific scores
 
-                sims.append(self.relatedness_score(prop.name, items_liked_by_user, [item]))
+                sims_prop = []
+
+                for past_item in items_liked_by_user:
+
+                    sims_prop.append(self.relatedness_score(prop.name, past_item, item))
+
+                s = np.mean(sims_prop)
+
+                sims.append(s)
 
         return sims
 
@@ -174,8 +182,16 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             for prop in social_properties:  # append a list of property-specific scores
 
-                sims.append(self.relatedness_score(prop.name, users_liking_the_item, [user]))
+                sims_prop = []
 
+                for past_user in users_liking_the_item:
+
+                    sims_prop.append(self.relatedness_score(prop.name, past_user, user))
+
+                s = np.mean(sims_prop)
+
+                sims.append(s)
+                
         return sims
 
     def _compute_scores(self, user, item, items_liked_by_user, users_liking_the_item):

@@ -27,7 +27,7 @@ class Entity2Rel(object):
 
         try:
 
-            score = emb_file.n_similarity(uri1, uri2)
+            score = emb_file.similarity(uri1, uri2)
 
         except KeyError:
 
