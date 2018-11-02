@@ -9,24 +9,28 @@ from flask import request
 import json
 from pymongo import MongoClient
 import random
+from flask_cors import CORS
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app)
+
 start_time = time.time()
 
 version_api = '0.1'
 
-dataset = 'LastFM'
+dataset = 'item_to_item_test'
 
 item_to_item_similarity_dict = {}
 
-#@app.before_first_request
+@app.before_first_request
 def load_model():
 
     # open item to item similarity matrix and read into dictionary
-    with open('datasets/'+dataset+'/item_to_item_matrix', 'rb') as f1:
+    with open('datasets/'+dataset+'/item_to_item_similarity', 'rb') as f1:
         global item_to_item_similarity_dict
         item_to_item_similarity_dict = pickle.load(f1)  # seed -> {item: score}
 
@@ -60,7 +64,6 @@ def read_item_metadata():
 
     global num_items
     num_items = len(item_metadata)
-    print(num_items)
 
 @app.route('/entity2rec/' + version_api + "/onboarding", methods=['GET'])
 def onboarding():
@@ -80,6 +83,8 @@ def onboarding():
         out[sample[0]] = sample[1]
 
     out_json = json.dumps(out, indent=4, sort_keys=True)
+
+    print(out_json)
 
     return out_json
 
@@ -153,4 +158,4 @@ def feedback():
 
 if __name__ == '__main__':
 
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
