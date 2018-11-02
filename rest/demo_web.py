@@ -1,3 +1,5 @@
+import sys
+sys.path.append('.')
 from entity2rec.sparql import Sparql
 import time
 import pickle
@@ -10,6 +12,7 @@ import json
 from pymongo import MongoClient
 import random
 from flask_cors import CORS
+
 
 
 logging.basicConfig(level=logging.INFO)
