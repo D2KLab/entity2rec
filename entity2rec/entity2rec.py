@@ -39,6 +39,8 @@ class Property:
 
 class Entity2Rec(Entity2Vec, Entity2Rel):
 
+    name = 'Entity2Rec'
+
     """Computes a set of relatedness scores between user-item pairs from a set of property-specific Knowledge Graph
     embeddings and user feedback and feeds them into a learning to rank algorithm"""
 
