@@ -663,7 +663,7 @@ class Evaluator(object):
 
                     W[i1][i2] = np.mean(recommender.collab_similarities(i1,i2))
 
-            with open('datasets/%s/item_to_item_similarity' % dataset, 'wb') as f:
+            with open('datasets/%s/item_to_item_similarity_%s' % (dataset, recommender.name), 'wb') as f:
 
                 pickle.dump(W, f, pickle.HIGHEST_PROTOCOL)
 
