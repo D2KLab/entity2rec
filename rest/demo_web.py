@@ -27,15 +27,20 @@ version_api = '0.1'
 
 dataset = 'item_to_item_test'
 
-item_to_item_similarity_dict = {}
+#item_to_item_similarity_dict = {}
 
 @app.before_first_request
 def load_model():
 
     # open item to item similarity matrix and read into dictionary
-    with open('datasets/'+dataset+'/item_to_item_similarity', 'rb') as f1:
-        global item_to_item_similarity_dict
-        item_to_item_similarity_dict = pickle.load(f1)  # seed -> {item: score}
+    with open('datasets/'+dataset+'/item_to_item_similarity_Entity2Rec', 'rb') as f1:
+        global item_to_item_similarity_dict_entity2rec
+        item_to_item_similarity_dict_entity2rec = pickle.load(f1)  # seed -> {item: score}
+
+    # open item to item similarity matrix and read into dictionary
+    with open('datasets/'+dataset+'/item_to_item_similarity_ItemKNN', 'rb') as f2:
+        global item_to_item_similarity_dict_itemknn
+        item_to_item_similarity_dict_itemknn = pickle.load(f2)  # seed -> {item: score}
 
 @app.before_first_request
 def read_item_metadata():
@@ -50,7 +55,6 @@ def read_item_metadata():
             line_split = line.strip('\n').split(' ')
             items.add(line_split[1])
 
-    print(items)
     # reads items metadata from sparql endpoint and keeps them in memory
     global item_metadata
     item_metadata = {}
@@ -58,8 +62,6 @@ def read_item_metadata():
     for item in items:
 
         metadata = Sparql.get_item_metadata(item)
-
-        print(metadata)
 
         if metadata:  # skip items with missing metadata
 
@@ -75,6 +77,18 @@ def onboarding():
 
     out['user_id'] = time.time()  # FIXME
 
+    global item_to_item_similarity_dict
+    global algorithm
+
+    # A/B testing
+    if random.random() >= 0.5:
+        item_to_item_similarity_dict = item_to_item_similarity_dict_entity2rec
+        algorithm = 'entity2rec'
+
+    else:
+        item_to_item_similarity_dict = item_to_item_similarity_dict_itemknn
+        algorithm = 'itemknn'
+
     number_of_samples = 1000
 
     if num_items < number_of_samples:
@@ -86,8 +100,6 @@ def onboarding():
         out[sample[0]] = sample[1]
 
     out_json = json.dumps(out, indent=4, sort_keys=True)
-
-    print(out_json)
 
     return out_json
 
@@ -150,6 +162,8 @@ def feedback():
         raise ValueError('Please provide a uri, user_id,feedback and position of the item.')
 
     content['timestamp'] = time.time()
+
+    content['algorithm'] = algorithm
 
     connection = MongoClient('localhost', 27017)
     db = connection.db
