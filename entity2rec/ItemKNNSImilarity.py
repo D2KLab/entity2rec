@@ -11,7 +11,7 @@ import numpy as np
 
 class ItemKNNSimilarity:
 
-    name = 'ItemKNNSimilarity'
+    name = 'ItemKNN'
 
     def __init__(self, dataset, train, implicit, threshold):
 
