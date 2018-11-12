@@ -179,7 +179,7 @@ def feedback():
 
     content['algorithm'] = algorithm
 
-    connection = MongoClient('localhost', 27017)
+    connection = MongoClient('localhost', 27027)
     db = connection.db
     collection = db.feedback
 
@@ -189,4 +189,4 @@ def feedback():
 
 if __name__ == '__main__':
 
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=5888, debug=True)
