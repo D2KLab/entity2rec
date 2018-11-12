@@ -1,3 +1,6 @@
+import sys
+sys.path.append('.')
+from entity2rec.sparql import Sparql
 import time
 import pickle
 from collections import defaultdict, Counter
@@ -10,7 +13,6 @@ from pymongo import MongoClient
 import random
 from flask_cors import CORS
 import numpy as np
-from SPARQLWrapper import SPARQLWrapper, JSON
 
 
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +25,9 @@ start_time = time.time()
 
 version_api = '0.1'
 
-dataset = 'LibraryThing'
+dataset = 'item_to_item_test'
+
+item_type = 'book'
 
 testing = False
 
@@ -79,7 +83,7 @@ def read_item_metadata():
     
     for item in items:
 
-        metadata = get_item_metadata(item)
+        metadata = Sparql.get_item_metadata(item, item_type)
 
         if metadata:  # skip items with missing metadata
 
@@ -205,107 +209,6 @@ def feedback():
     collection.save(content)
 
     return 'ok\n'
-
-
-def get_item_metadata(uri):
-
-    sparql = SPARQLWrapper("http://dbpedia.org/sparql")
-
-    sparql.setQuery("""select ?labelo ?labelp ?labels ?description ?abstract ?thumbnail ?homepage
-                    where {
-
-                    OPTIONAL {
-                      <%s> <http://dbpedia.org/ontology/label> ?labelo .
-                      FILTER(lang(?labelo) = 'en' )
-                     }
-
-                    OPTIONAL {
-                      <%s> <http://dbpedia.org/property/label> ?labelp .
-                      FILTER(lang(?labelp) = 'en' )
-                    }
-
-                    OPTIONAL {
-                      <%s> <http://www.w3.org/2000/01/rdf-schema#label> ?labels.
-                      FILTER(lang(?labels) = 'en' )
-                    }
-
-                    OPTIONAL {
-                    <%s> <http://purl.org/dc/terms/description> ?description .
-                    FILTER (lang(?description) = 'en')
-                    }
-                    OPTIONAL {
-                    <%s> <http://dbpedia.org/ontology/thumbnail> ?thumbnail .
-                    }
-                    OPTIONAL{
-                    <%s> <http://xmlns.com/foaf/0.1/homepage> ?homepage .
-                    }
-                    OPTIONAL {
-                      <%s> <http://dbpedia.org/ontology/abstract> ?abstract .
-                      FILTER (lang(?abstract) = 'en')
-                    }
-
-                    } """ % (uri, uri, uri, uri, uri, uri, uri))
-    
-
-    sparql.setReturnFormat(JSON)
-
-    try:  # check whether it does not return an empty list
-
-        result_raw = sparql.query().convert()['results']['bindings'][0]
-
-        result = {}
-
-        for key, value in result_raw.items():
-
-            result[key] = value['value']
-
-        c = 0
-
-        try:
-
-            result['label'] = result['labels']
-
-        except KeyError:
-            c+=1
-            pass
-
-        try:
-
-            result['label'] = result['labelp']
-
-        except KeyError:
-            c+=1
-            pass
-
-        try:
-
-            result['label'] = result['labelo']
-
-        except KeyError:
-            c+=1
-            pass
-
-        # at least one label must be there
-        if c == 3: 
-            result = None
-
-        # either abstract or description must be there
-        if 'abstract' not in result.keys() and 'description' not in result.keys():
-            result = None
-
-        # if thumbnail is not there, scrape google
-        if 'thumbnail' not in result.keys():
-
-            out=subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s book\"" % result['label'], "--print_urls", "-l", "1"])
-
-            url = out.decode('utf-8').split('\n')[4].replace('Image URL: ','')
-
-            result['thumbnail'] = url
-    except:
-
-        result = None
-
-    return result
 
 
 if __name__ == '__main__':
