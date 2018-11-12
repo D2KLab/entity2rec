@@ -14,7 +14,6 @@ import random
 from flask_cors import CORS
 
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -25,22 +24,26 @@ start_time = time.time()
 
 version_api = '0.1'
 
-dataset = 'item_to_item_test'
+dataset = 'LibraryThing'
 
-#item_to_item_similarity_dict = {}
+testing = False
 
 @app.before_first_request
 def load_model():
+
+    print('loading model')
 
     # open item to item similarity matrix and read into dictionary
     with open('datasets/'+dataset+'/item_to_item_similarity_Entity2Rec', 'rb') as f1:
         global item_to_item_similarity_dict_entity2rec
         item_to_item_similarity_dict_entity2rec = pickle.load(f1)  # seed -> {item: score}
 
+    if testing:
+
     # open item to item similarity matrix and read into dictionary
-    with open('datasets/'+dataset+'/item_to_item_similarity_ItemKNN', 'rb') as f2:
-        global item_to_item_similarity_dict_itemknn
-        item_to_item_similarity_dict_itemknn = pickle.load(f2)  # seed -> {item: score}
+        with open('datasets/'+dataset+'/item_to_item_similarity_ItemKNN', 'rb') as f2:
+            global item_to_item_similarity_dict_itemknn
+            item_to_item_similarity_dict_itemknn = pickle.load(f2)  # seed -> {item: score}
 
 @app.before_first_request
 def read_item_metadata():
@@ -58,7 +61,7 @@ def read_item_metadata():
     # reads items metadata from sparql endpoint and keeps them in memory
     global item_metadata
     item_metadata = {}
-
+    
     for item in items:
 
         metadata = Sparql.get_item_metadata(item)
@@ -66,6 +69,8 @@ def read_item_metadata():
         if metadata:  # skip items with missing metadata
 
             item_metadata[item] = metadata
+
+        logger.info("%s\n" %item)
 
     global num_items
     num_items = len(item_metadata)
@@ -80,16 +85,25 @@ def onboarding():
     global item_to_item_similarity_dict
     global algorithm
 
-    # A/B testing
-    if random.random() >= 0.5:
+
+    if testing:
+        # A/B testing
+        if random.random() >= 0.5:
+            item_to_item_similarity_dict = item_to_item_similarity_dict_entity2rec
+            algorithm = 'entity2rec'
+
+        else:
+            item_to_item_similarity_dict = item_to_item_similarity_dict_itemknn
+            algorithm = 'itemknn'
+
+    else:
         item_to_item_similarity_dict = item_to_item_similarity_dict_entity2rec
         algorithm = 'entity2rec'
 
-    else:
-        item_to_item_similarity_dict = item_to_item_similarity_dict_itemknn
-        algorithm = 'itemknn'
+    item_to_item_similarity_dict = item_to_item_similarity_dict_entity2rec
+    algorithm = 'entity2rec'
 
-    number_of_samples = 1000
+    number_of_samples = 100
 
     if num_items < number_of_samples:
 
@@ -122,7 +136,7 @@ def recommend():
 
     # retrieve similarity values for the seed item
 
-    d = item_to_item_similarity_dict[seed]
+    d = item_to_item_similarity_dict_entity2rec[seed]
 
     # remove seed from candidate items
 
