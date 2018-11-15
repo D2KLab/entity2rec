@@ -13,6 +13,7 @@ from pymongo import MongoClient
 import random
 from flask_cors import CORS
 import numpy as np
+import os
 
 
 logging.basicConfig(level=logging.INFO)
@@ -75,25 +76,60 @@ def read_item_metadata():
     global item_metadata
     item_metadata = {}
 
-    with open('datasets/'+dataset+'/thumbnails.txt', 'w') as thumbnail_index:
+    # check whether a thumbnail index file exists
+    try:
 
-        for item in items_all:
+        thumbnail_index_file = open('datasets/'+dataset+'/thumbnails.txt')
 
-            metadata = Sparql.get_item_metadata(item, item_type)
+        thumbnail = {}
 
-            if metadata:  # skip items with missing metadata
+        for line in thumbnail_index_file:
 
-                item_metadata[item] = metadata
+            line_split = line.strip('\n').split(' ')
 
-                logger.info("%s\n" %item)
+            item = line_split[0]
+            thumb = line_split[1]
 
-                thumbnail = metadata['thumbnail']
+            thumbnail[item] = thumb
 
-                thumbnail_index.write('%s %s\n' %(item, thumbnail))
+        thumbnail_exists = True
 
-            else: # remove items from popularity dictionary
-                logger.info("%s removed\n" %item)
-                del pop_dict[item]
+        thumbnail_index_file.close()
+
+    # if it does not exist, we need to create it
+    except FileNotFoundError:
+
+        thumbnail_exists = False
+
+        thumbnail_index_file = open('datasets/'+dataset+'/thumbnails.txt', 'w')
+
+    for item in items_all:
+
+        metadata = Sparql.get_item_metadata(item, item_type, thumbnail_exists)
+
+        if metadata:  # skip items with missing metadata
+
+            # thumbnail has been scraped and is already in metadata
+            if not thumbnail_exists:
+
+                thumb = metadata['thumbnail']
+
+                # write on thumbnail index file
+                thumbnail_index_file.write('%s %s\n' %(item, thumb))
+
+            # I can retrieve the thumbnail from the dictionary
+            else:
+
+                metadata['thumbnail'] = thumbnail[item]
+
+            item_metadata[item] = metadata
+
+            logger.info("%s\n" %item)
+
+
+        else: # remove items from popularity dictionary
+            logger.info("%s removed\n" %item)
+            del pop_dict[item]
 
     # probs from popularity dictionary
     global probs
