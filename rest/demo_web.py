@@ -75,19 +75,26 @@ def read_item_metadata():
     global item_metadata
     item_metadata = {}
     
-    for item in items_all:
 
-        metadata = Sparql.get_item_metadata(item, item_type)
+    with open('datasets/'+dataset+'/thumbnails.txt', 'w') as thumbnail_index:
 
-        if metadata:  # skip items with missing metadata
+        for item in items_all:
 
-            item_metadata[item] = metadata
+            metadata = Sparql.get_item_metadata(item, item_type)
 
-            logger.info("%s\n" %item)
+            if metadata:  # skip items with missing metadata
 
-        else: # remove items from popularity dictionary
-            logger.info("%s removed\n" %item)
-            del pop_dict[item]
+                item_metadata[item] = metadata
+
+                logger.info("%s\n" %item)
+
+                thumbnail = metadata['thumbnail']
+
+                thumbnail_index.write('%s %s\n' %(item, thumbnail))
+
+            else: # remove items from popularity dictionary
+                logger.info("%s removed\n" %item)
+                del pop_dict[item]
 
     # probs from popularity dictionary
     global probs
@@ -140,7 +147,7 @@ def onboarding():
 
         number_of_samples = num_items
 
-    for sampled_item in np.random.choice(items, number_of_samples, p=probs):
+    for sampled_item in np.random.choice(items, number_of_samples, p=probs, replace=False):
 
         out[sampled_item] = item_metadata[sampled_item]
 
