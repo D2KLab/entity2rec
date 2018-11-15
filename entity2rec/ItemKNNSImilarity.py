@@ -8,74 +8,46 @@ import os
 from parse_args import parse_args
 import random
 import numpy as np
+import turicreate as tc
 
 class ItemKNNSimilarity:
 
-    name = 'ItemKNN'
+    name = 'ItemKNNturi'
 
-    def __init__(self, dataset, train, implicit, threshold):
-
-        sim_options = {'name': 'cosine',
-
-                       'user_based': False  # compute  similarities between items
-                       }
-
-        self.algorithm = KNNBaseline(sim_options=sim_options)
-
-        self.train = train
+    def __init__(self, dataset, implicit):
 
         self.dataset = dataset
 
-        self.item_to_ind = {}
+        data = tc.SFrame.read_csv('datasets/'+'%s/FM/' %self.dataset
+                                  +'train.dat', delimiter=' ')
 
-        self.user_to_ind = {}
+        if implicit:
 
-        self.implicit = implicit
-
-        self.threshold = threshold
-
-        self.model = self.learn_model_surprise()
-
-        self.sim_matrix = self.model.compute_similarities()
-
-        self.avg_s = np.mean(self.sim_matrix)
-
-    def learn_model_surprise(self):
-
-        file_path = os.path.expanduser(self.train)
-
-        if self.implicit:
-
-            rating_scale = (0,1)
+            self.model = tc.item_similarity_recommender.create(data,
+                        user_id='user_id', item_id='item_id')
 
         else:
-            rating_scale = (1, (self.threshold*5)//4)
 
-        reader = Reader(line_format='user item rating timestamp', sep=' ', rating_scale=rating_scale)
+            self.model = tc.item_similarity_recommender.create(data,
+                        user_id='user_id', item_id='item_id', target='rating')
+        
+        similarities = self.model.get_similar_items()
+        
+        self.sim_matrix = {}
 
-        data = Dataset.load_from_file(file_path, reader=reader)
+        for s in similarities:
 
-        algo = self.algorithm
-
-        self.trainset = data.build_full_trainset()
-
-        algo.train(self.trainset)
-
-        return algo
+            self.sim_matrix[s['item_id'], s['similar']] = s['score']
 
     def collab_similarities(self, item_1, item_2):
 
         try:
 
-            item_1_ind = self.trainset.to_inner_iid(item_1)
+            s = self.sim_matrix[item_1, item_2]
 
-            item_2_ind = self.trainset.to_inner_iid(item_2)
+        except KeyError: 
 
-            s = self.sim_matrix[item_1_ind, item_2_ind]
-
-        except ValueError:  # missing item in the training set
-
-            s = self.avg_s
+            s = 0.
 
         return s
 
@@ -117,7 +89,7 @@ if __name__ == '__main__':
 
         threshold = args.threshold
 
-    ItemKNNSim = ItemKNNSimilarity(args.dataset, args.train, implicit, threshold)
+    ItemKNNSim = ItemKNNSimilarity(args.dataset, implicit)
 
     # initialize evaluator
 
