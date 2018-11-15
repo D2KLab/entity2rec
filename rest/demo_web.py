@@ -26,7 +26,7 @@ start_time = time.time()
 
 version_api = '0.1'
 
-dataset = 'item_to_item_test'
+dataset = 'LibraryThing'
 
 item_type = 'book'
 
