@@ -121,7 +121,7 @@ class Sparql(object):
 
         sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 
-        sparql.setQuery("""select ?labelo ?labelp ?labels ?description ?abstract ?thumbnail ?homepage
+        sparql.setQuery("""select ?labelo ?labelp ?labels ?description ?abstract ?homepage ?authorlabo ?authorlabp ?authorlabs
                         where {
 
                         OPTIONAL {
@@ -143,9 +143,6 @@ class Sparql(object):
                         <%s> <http://purl.org/dc/terms/description> ?description .
                         FILTER (lang(?description) = 'en')
                         }
-                        OPTIONAL {
-                        <%s> <http://dbpedia.org/ontology/thumbnail> ?thumbnail .
-                        }
                         OPTIONAL{
                         <%s> <http://xmlns.com/foaf/0.1/homepage> ?homepage .
                         }
@@ -153,8 +150,24 @@ class Sparql(object):
                           <%s> <http://dbpedia.org/ontology/abstract> ?abstract .
                           FILTER (lang(?abstract) = 'en')
                         }
+                        OPTIONAL {
+                        <%s> dbo:author ?o.
+                        ?o rdfs:label ?authorlabs.
+                        FILTER (lang(?authorlabs) = 'en')
+                        }
+                        OPTIONAL {
+                        <%s> dbo:author ?o.
+                        ?o dbo:label ?authorlabo.
+                        FILTER (lang(?authorlabo) = 'en')
+                        }
 
-                        } """ % (uri, uri, uri, uri, uri, uri, uri))
+                        OPTIONAL {
+                        <%s> dbo:author ?o.
+                        ?o dbp:label ?authorlabp.
+                        FILTER (lang(?authorlabp) = 'en')
+                        }
+
+                        }""" % (uri, uri, uri, uri, uri, uri, uri, uri, uri))
         
 
         sparql.setReturnFormat(JSON)
@@ -162,7 +175,6 @@ class Sparql(object):
         try:  # check whether it does not return an empty list
 
             result_raw = sparql.query().convert()['results']['bindings'][0]
-
             result = {}
 
             for key, value in result_raw.items():
@@ -199,18 +211,49 @@ class Sparql(object):
             if c == 3: 
                 result = None
 
+            # same with author
+            c = 0
+
+            try:
+
+                result['author'] = result['authorlabs']
+
+            except KeyError:
+                c+=1
+                pass
+
+            try:
+
+                result['author'] = result['authorlabp']
+
+            except KeyError:
+                c+=1
+                pass
+
+            try:
+
+                result['author'] = result['authorlabo']
+
+            except KeyError:
+                c+=1
+                pass
+
+            # at least one label must be there
+            if c == 3: 
+                result = None
+
             # either abstract or description must be there
             if 'abstract' not in result.keys() and 'description' not in result.keys():
                 result = None
 
-            # if thumbnail is not there, scrape google
-            if 'thumbnail' not in result.keys():
+            # scrape google for thumbnail
 
-                out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s\"" % result['label'], "-sk", "\"%s\"" % item_type, "--print_urls", "-l", "1"])
+            out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s\"" % result['label'], "-sk", "\"%s\"" % item_type, "--print_urls", "-l", "1"])
 
-                url = out.decode('utf-8').split('\n')[4].replace('Image URL: ','')
+            url = out.decode('utf-8').split('\n')[4].replace('Image URL: ','')
 
-                result['thumbnail'] = url
+            result['thumbnail'] = url
+
         except:
 
             result = None
