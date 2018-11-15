@@ -108,6 +108,13 @@ def read_item_metadata():
         items.append(key)
         probs.append(value/tot_sum)
 
+    # use temperature to speed up onboarding
+
+    temperature = 0.3
+
+    probs = probs ** (1 / temperature)
+    probs /= np.sum(probs)
+
     global num_items
     num_items = len(item_metadata)
 
@@ -142,6 +149,9 @@ def onboarding():
     algorithm = 'entity2rec'
 
     number_of_samples = 100
+
+    # helper function to sample an index from a probability array
+    probs = np.asarray(probs).astype('float64')
 
     if num_items < number_of_samples:
 
