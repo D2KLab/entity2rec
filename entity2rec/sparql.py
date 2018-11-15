@@ -117,7 +117,7 @@ class Sparql(object):
         return uri
 
     @staticmethod
-    def get_item_metadata(uri, item_type):
+    def get_item_metadata(uri, item_type, thumbnail_exists):
 
         sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 
@@ -246,13 +246,14 @@ class Sparql(object):
             if 'abstract' not in result.keys() and 'description' not in result.keys():
                 result = None
 
-            # scrape google for thumbnail
+            if not thumbnail_exists:
+                # scrape google for thumbnail
 
-            out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s\"" % result['label'], "-sk", "\"%s\"" % item_type, "--print_urls", "-l", "1"])
+                out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s\"" % result['label'], "-sk", "\"%s\"" % item_type, "--print_urls", "-l", "1"])
 
-            url = out.decode('utf-8').split('\n')[4].replace('Image URL: ','')
+                url = out.decode('utf-8').split('\n')[4].replace('Image URL: ','')
 
-            result['thumbnail'] = url
+                result['thumbnail'] = url
 
         except:
 
