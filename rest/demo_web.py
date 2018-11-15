@@ -25,7 +25,7 @@ start_time = time.time()
 
 version_api = '0.1'
 
-dataset = 'item_to_item_test'
+dataset = 'LibraryThing'
 
 item_type = 'book'
 
@@ -52,8 +52,8 @@ def load_model():
 def read_item_metadata():
 
     # reads list of item in the dataset
-    global items
-    items = []
+    global items_all
+    items_all = set()
 
     # item popularity
     global pop_dict
@@ -62,26 +62,20 @@ def read_item_metadata():
     with open('datasets/'+dataset+'/all.dat') as all_ratings:
 
         for line in all_ratings:
+            
             line_split = line.strip('\n').split(' ')
 
             item = line_split[1]
 
-            pop_dict[item] +=1
+            pop_dict[item]+=1
 
-    global probs
-    probs = []
-    tot_sum = sum(pop_dict.values())
-
-    for key, value in pop_dict.items():
-
-        items.append(key)
-        probs.append(value/tot_sum)
+            items_all.add(item)
 
     # reads items metadata from sparql endpoint and keeps them in memory
     global item_metadata
     item_metadata = {}
     
-    for item in items:
+    for item in items_all:
 
         metadata = Sparql.get_item_metadata(item, item_type)
 
@@ -89,14 +83,28 @@ def read_item_metadata():
 
             item_metadata[item] = metadata
 
-        else:
+            logger.info("%s\n" %item)
 
-            del pop_dict[item]  # remove item
+        else: # remove items from popularity dictionary
+            logger.info("%s removed\n" %item)
+            del pop_dict[item]
 
-        logger.info("%s\n" %item)
+    # probs from popularity dictionary
+    global probs
+    probs = []
+    global items
+    items = []
+    tot_sum = sum(pop_dict.values())
+
+    for key, value in pop_dict.items():
+
+        items.append(key)
+        probs.append(value/tot_sum)
 
     global num_items
     num_items = len(item_metadata)
+
+    assert num_items == len(items)
 
 @app.route('/entity2rec/' + version_api + "/onboarding", methods=['GET'])
 def onboarding():
