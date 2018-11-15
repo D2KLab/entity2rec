@@ -25,7 +25,7 @@ start_time = time.time()
 
 version_api = '0.1'
 
-dataset = 'LibraryThing'
+dataset = 'item_to_item_test'
 
 item_type = 'book'
 
@@ -74,7 +74,6 @@ def read_item_metadata():
     # reads items metadata from sparql endpoint and keeps them in memory
     global item_metadata
     item_metadata = {}
-    
 
     with open('datasets/'+dataset+'/thumbnails.txt', 'w') as thumbnail_index:
 
@@ -111,7 +110,8 @@ def read_item_metadata():
     # use temperature to speed up onboarding
 
     temperature = 0.3
-
+    # helper function to sample an index from a probability array
+    probs = np.asarray(probs).astype('float64')
     probs = probs ** (1 / temperature)
     probs /= np.sum(probs)
 
@@ -149,9 +149,6 @@ def onboarding():
     algorithm = 'entity2rec'
 
     number_of_samples = 100
-
-    # helper function to sample an index from a probability array
-    probs = np.asarray(probs).astype('float64')
 
     if num_items < number_of_samples:
 
