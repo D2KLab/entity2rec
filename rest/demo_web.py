@@ -76,10 +76,12 @@ def read_item_metadata():
     global item_metadata
     item_metadata = {}
 
-    # check whether a thumbnail index file exists
-    try:
+    # check whether a thumbnail index file exists and is not empty
+    filepath = 'datasets/'+dataset+'/thumbnails.txt'
 
-        thumbnail_index_file = open('datasets/'+dataset+'/thumbnails.txt')
+    if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
+
+        thumbnail_index_file = open(filepath)
 
         thumbnail = {}
 
@@ -94,14 +96,12 @@ def read_item_metadata():
 
         thumbnail_exists = True
 
-        thumbnail_index_file.close()
-
     # if it does not exist, we need to create it
-    except FileNotFoundError:
+    else:
 
         thumbnail_exists = False
 
-        thumbnail_index_file = open('datasets/'+dataset+'/thumbnails.txt', 'w')
+        thumbnail_index_file = open(filepath, 'w')
 
     for item in items_all:
 
@@ -130,6 +130,9 @@ def read_item_metadata():
         else: # remove items from popularity dictionary
             logger.info("%s removed\n" %item)
             del pop_dict[item]
+
+    # close thumbnail index file
+    thumbnail_index_file.close()
 
     # probs from popularity dictionary
     global probs
