@@ -249,7 +249,7 @@ class Sparql(object):
             if not thumbnail_exists:
                 # scrape google for thumbnail
 
-                out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s\"" % result['label'], "-sk", "\"%s\"" % item_type, "--print_urls", "-l", "1"])
+                out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s\"" % result['label'].replace(',',''), "-sk", "\"%s %s\"" % (item_type, result['author']), "--print_urls", "-l", "1"])
 
                 url = out.decode('utf-8').split('\n')[4].replace('Image URL: ','')
 

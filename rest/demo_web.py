@@ -14,6 +14,7 @@ import random
 from flask_cors import CORS
 import numpy as np
 import os
+import datetime
 
 
 logging.basicConfig(level=logging.INFO)
@@ -30,7 +31,16 @@ dataset = 'LibraryThing'
 
 item_type = 'book'
 
-testing = False
+testing = True
+
+mongodb_port = 27027
+
+app_port = 5888
+
+connection = MongoClient('localhost', mongodb_port)
+entity2rec = connection.entity2rec
+feedback_collection = entity2rec.feedback
+seed_collection = entity2rec.seed
 
 @app.before_first_request
 def load_model():
@@ -216,6 +226,8 @@ def recommend():
     except KeyError:
         raise ValueError('Please provide a seed item and a user_id.')
 
+    seed_collection.save(content)
+
     rec_time = time.time()
 
     # retrieve similarity values for the seed item
@@ -259,19 +271,17 @@ def feedback():
     except KeyError:
         raise ValueError('Please provide a uri, user_id,feedback and position of the item.')
 
-    content['timestamp'] = time.time()
+    content['timestamp'] = datetime.datetime.fromtimestamp(time.time()).strftime('%d-%m-%Y %H:%M:%S')
+
+    content['date'] = content['timestamp'].split(' ')[0]
 
     content['algorithm'] = algorithm
 
-    connection = MongoClient('localhost', 27027)
-    db = connection.db
-    collection = db.feedback
-
-    collection.save(content)
+    feedback_collection.save(content)
 
     return 'ok\n'
 
 
 if __name__ == '__main__':
 
-    app.run(host='0.0.0.0', port=5888, debug=True)
+    app.run(host='0.0.0.0', port=app_port, debug=True)
