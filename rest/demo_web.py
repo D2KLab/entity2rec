@@ -130,7 +130,13 @@ def read_item_metadata():
             # I can retrieve the thumbnail from the dictionary
             else:
 
-                metadata['thumbnail'] = thumbnail[item]
+                try:
+
+                    metadata['thumbnail'] = thumbnail[item]
+
+                except KeyError:
+                    logger.info("%s removed - no thumbnail in index\n" %item)
+                    continue
 
             item_metadata[item] = metadata
 
@@ -193,9 +199,6 @@ def onboarding():
     else:
         item_to_item_similarity_dict = item_to_item_similarity_dict_entity2rec
         algorithm = 'entity2rec'
-
-    item_to_item_similarity_dict = item_to_item_similarity_dict_entity2rec
-    algorithm = 'entity2rec'
 
     number_of_samples = 100
 

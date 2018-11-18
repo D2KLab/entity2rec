@@ -256,8 +256,8 @@ class Sparql(object):
 
                 result['thumbnail'] = url
 
-            if not result['thumbnail']:  # skip item if there is not thumbnail
-                result = None
+                if not result['thumbnail']:  # skip item if there is not thumbnail
+                    result = None
 
         except:
 
