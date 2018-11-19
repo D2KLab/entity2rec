@@ -250,7 +250,7 @@ class Sparql(object):
 
                 # scrape google for thumbnail
 
-                out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s %s %s\"" % (result['label'].replace(',',''), item_type, result['author']), "--print_urls", "-l", "1"])
+                out = subprocess.check_output(["googleimagesdownload", "--keywords", "\"%s %s %s\"" % (result['label'].replace(',',''), result['author'], item_type), "--print_urls", "-l", "1"])
 
                 url = out.decode('utf-8').split('\n')[4].replace('Image URL: ','')
 
