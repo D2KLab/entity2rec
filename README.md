@@ -7,6 +7,8 @@ The command:
 `python entity2rec/main.py --dataset LibraryThing`
 will run entity2rec on the LibraryThing dataset
 
+The configuration of properties.json is used to select the properties.
+
 ## Requirements
 
 - Python 2.7 or above
