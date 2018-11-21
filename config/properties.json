@@ -7,7 +7,7 @@
    "feedback_dbo:birthPlace", "feedback_dbo:bandMember", "feedback_dbo:formerBandMember", "feedback_dbo:occupation", "feedback_dbo:instrument", "feedback_dct:subject"]}
 ,
 
-  "LibraryThing" : {"collaborative": "feedback_dbo:author", "feedback_dbo:publisher", "feedback_dbo:literaryGenre", "feedback_dbo:mediaType", "dbo:subsequentWork",
+  "LibraryThing" : {"collaborative": ["feedback_dbo:author", "feedback_dbo:publisher", "feedback_dbo:literaryGenre", "feedback_dbo:mediaType", "dbo:subsequentWork",
   "feedback_dbo:previousWork", "feedback_dbo:series", "feedback_dbo:country", "feedback_dbo:language", "feedback_dbo:coverArtist", "feedback_dct:subject"]
 }
 }
