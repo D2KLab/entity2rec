@@ -338,33 +338,14 @@ class Evaluator(object):
 
         if '/' in write_to_file:
 
-            path = write_to_file.split('/')[:-1]
+            path_split = write_to_file.split('/')
 
-            nested_folder = path[0]
+            path = '.'
 
-            print(path)
+            for p in path_split[:-1]:
+                path = path + '/' + p
 
-            try:
-
-                os.mkdir(nested_folder)
-
-            except FileExistsError:
-
-                for folder in path[1:]:
-
-                    nested_folder = nested_folder + '/'
-
-                    nested_folder = nested_folder + folder
-
-                    try:
-
-                        os.mkdir(nested_folder)
-
-                    except FileExistsError:
-
-                        pass
-
-                pass
+            os.makedirs(path)
 
         if not self.all_items:  # reading the features from file
 

@@ -258,97 +258,28 @@ class Entity2Rec(Entity2Vec, Entity2Rel):
 
             raise ValueError('Metric not implemented')
 
-        if user_to_cluster:
+        self.model = pyltr.models.LambdaMART(
+            metric=fit_metric,
+            n_estimators=n_estimators,
+            learning_rate=lr,
+            max_depth=max_depth,
+            max_features=max_features,
+            verbose=1,
+            random_state=1
+        )
 
-            self.models = {}
+        # Only needed if you want to perform validation (early stopping & trimming)
 
-            self.user_to_cluster = user_to_cluster
+        if x_val is not None and y_val is not None and qids_val is not None:
 
-            # map cluster id to users ids of the cluster
-            cluster_to_users = defaultdict(list)
+            monitor = pyltr.models.monitors.ValidationMonitor(
+                x_val, y_val, qids_val, metric=fit_metric)
 
-            for user, cluster in user_to_cluster.items():
-
-                cluster_to_users[cluster].append(user)
-
-            # iterate through cluster ids
-            for user_cluster in list(set(self.user_to_cluster.values())):
-
-                x_train_c, y_train_c, qids_train_c, x_val_c, y_val_c, qids_val_c = [],[],[],[],[],[]
-                for i, qid in enumerate(qids_train):
-
-                    if str(qid) in cluster_to_users[user_cluster]:
-
-                        x_train_c.append(x_train[i])
-                        y_train_c.append(y_train[i])
-                        qids_train_c.append(qid)
-
-                        x_val_c.append(x_val[i])
-                        y_val_c.append(y_val[i])
-                        qids_val_c.append(qids_val[i])
-
-                """
-                print(x_train_c)
-
-                x_train_c = np.asarray(x_train_c).reshape(())
-                y_train_c = np.asarray(y_train_c)
-                qids_train_c = np.asarray(qids_train_c)
-                items_train_c = np.asarray(items_train_c)
-
-                x_val_c = np.asarray(x_val_c)
-                y_val_c = np.asarray(y_val_c)
-                qids_val_c = np.asarray(qids_val_c)
-                items_val_c = np.asarray(items_val_c)
-                """
-
-                model = pyltr.models.LambdaMART(
-                    metric=fit_metric,
-                    n_estimators=n_estimators,
-                    learning_rate=lr,
-                    max_depth=max_depth,
-                    max_features=max_features,
-                    verbose=1,
-                    random_state=1)
-                    
-                # Only needed if you want to perform validation (early stopping & trimming)
-
-                if x_val is not None and y_val is not None and qids_val is not None:
-
-                    monitor = pyltr.models.monitors.ValidationMonitor(
-                        x_val_c, y_val_c, qids_val_c, metric=fit_metric)
-
-                    model.fit(x_train_c, y_train_c, qids_train_c, monitor=monitor)
-
-                else:
-
-                    model.fit(x_train_c, y_train_c, qids_train_c)
-
-                self.models[user_cluster] = model
+            self.model.fit(x_train, y_train, qids_train, monitor=monitor)
 
         else:
 
-            self.model = pyltr.models.LambdaMART(
-                metric=fit_metric,
-                n_estimators=n_estimators,
-                learning_rate=lr,
-                max_depth=max_depth,
-                max_features=max_features,
-                verbose=1,
-                random_state=1
-            )
-
-            # Only needed if you want to perform validation (early stopping & trimming)
-
-            if x_val is not None and y_val is not None and qids_val is not None:
-
-                monitor = pyltr.models.monitors.ValidationMonitor(
-                    x_val, y_val, qids_val, metric=fit_metric)
-
-                self.model.fit(x_train, y_train, qids_train, monitor=monitor)
-
-            else:
-
-                self.model.fit(x_train, y_train, qids_train)
+            self.model.fit(x_train, y_train, qids_train)
 
     def predict(self, x_test, qids_test):
 
