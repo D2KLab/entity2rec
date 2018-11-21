@@ -1,17 +1,14 @@
 {
-   "Movielens1M" : {"collaborative": ["feedback"], "content": ["dbo:director", "dbo:starring", "dbo:distributor", "dbo:writer",
-	   "dbo:musicComposer", "dbo:producer", "dbo:cinematography", "dbo:editing", "dct:subject"]},
+   "Movielens1M" : {"collaborative": ["feedback_dbo:director", "feedback_dbo:starring", "feedback_dbo:distributor", "feedback_dbo:writer",
+	   "feedback_dbo:musicComposer", "feedback_dbo:producer", "feedback_dbo:cinematography", "feedback_dbo:editing", "feedback_dct:subject"]},
 
-   "LastFM" : { "collaborative": ["feedback"], "content": ["dbo:genre", "dbo:recordLabel", "dbo:hometown",
-     "dbo:associatedBand", "dbo:associatedMusicalArtist",
-   "dbo:birthPlace", "dbo:bandMember", "dbo:formerBandMember", "dbo:occupation", "dbo:instrument", "dct:subject"],
-   "social" : ["friends"]}
+   "LastFM" : { "collaborative": ["feedback_dbo:genre", "feedback_dbo:recordLabel", "feedback_dbo:hometown",
+     "feedback_dbo:associatedBand", "feedback_dbo:associatedMusicalArtist",
+   "feedback_dbo:birthPlace", "feedback_dbo:bandMember", "feedback_dbo:formerBandMember", "feedback_dbo:occupation", "feedback_dbo:instrument", "feedback_dct:subject"]}
 ,
 
-  "LibraryThing" : {"collaborative": ["feedback"],
-    "content": ["dbo:author", "dbo:publisher", "dbo:literaryGenre", "dbo:mediaType", "dbo:subsequentWork",
-  "dbo:previousWork", "dbo:series", "dbo:country", "dbo:language", "dbo:coverArtist", "dct:subject"],
-   "social" : ["friends", "interesting"]
+  "LibraryThing" : {"collaborative": "feedback_dbo:author", "feedback_dbo:publisher", "feedback_dbo:literaryGenre", "feedback_dbo:mediaType", "dbo:subsequentWork",
+  "feedback_dbo:previousWork", "feedback_dbo:series", "feedback_dbo:country", "feedback_dbo:language", "feedback_dbo:coverArtist", "feedback_dct:subject"]
 }
 }
 
