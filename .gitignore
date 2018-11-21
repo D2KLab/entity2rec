@@ -1,11 +1,15 @@
 emb/*
 *.pyc
 *.out
-datasets/*
+.idea/*
+datasets/movielens_1m/old/*
+datasets/movielens_1m/MyMediaLite_format/*
+datasets/movielens_1m/chunks/*
 clustering/*
 benchmarks/*
 features/*
-scripts/*
 ranking/feature_selection/*
 ranking/models/*
 ranking/results/*
+predictions/*
+venv/*

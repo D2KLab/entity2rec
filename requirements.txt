@@ -1,0 +1,8 @@
+gensim
+joblib
+networkx
+numpy
+pandas
+pyltr
+scipy
+SPARQLWrapper
