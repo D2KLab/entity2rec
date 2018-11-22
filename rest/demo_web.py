@@ -41,6 +41,8 @@ connection = MongoClient('localhost', mongodb_port)
 entity2rec = connection.entity2rec
 feedback_collection = entity2rec.feedback
 seed_collection = entity2rec.seed
+discard_collection = entity2rec.discard
+
 
 @app.before_first_request
 def load_model():
@@ -54,10 +56,11 @@ def load_model():
 
     if testing:
 
-    # open item to item similarity matrix and read into dictionary
+        # open item to item similarity matrix and read into dictionary
         with open('datasets/'+dataset+'/item_to_item_similarity_ItemKNN', 'rb') as f2:
             global item_to_item_similarity_dict_itemknn
             item_to_item_similarity_dict_itemknn = pickle.load(f2)  # seed -> {item: score}
+
 
 @app.before_first_request
 def read_item_metadata():
@@ -142,8 +145,7 @@ def read_item_metadata():
 
             logger.info("%s\n" %item)
 
-
-        else: # remove items from popularity dictionary
+        else:  # remove items from popularity dictionary
             logger.info("%s removed\n" %item)
             del pop_dict[item]
 
@@ -175,6 +177,7 @@ def read_item_metadata():
 
     assert num_items == len(items)
 
+
 @app.route('/entity2rec/' + version_api + "/onboarding", methods=['GET'])
 def onboarding():
 
@@ -184,7 +187,8 @@ def onboarding():
 
     global item_to_item_similarity_dict
     global algorithm
-
+    global discarded_items
+    discarded_items = []
 
     if testing:
         # A/B testing
@@ -214,6 +218,7 @@ def onboarding():
 
     return out_json
 
+
 @app.route('/entity2rec/' + version_api + "/recs", methods=['POST'])
 def recommend():
 
@@ -233,13 +238,19 @@ def recommend():
 
     rec_time = time.time()
 
+    # remove seed from candidate items
+
+    candidates = []
+
+    for candidate in item_metadata.keys():
+
+        if candidate != seed and candidate not in discarded_items:
+
+            candidates.append(candidate)
+
     # retrieve similarity values for the seed item
 
     d = item_to_item_similarity_dict_entity2rec[seed]
-
-    # remove seed from candidate items
-
-    candidates = [i for i in item_metadata.keys() if i != seed]
 
     recs = heapq.nlargest(N, candidates, key=lambda x: d[x])
 
@@ -259,6 +270,7 @@ def recommend():
     logger.info("--- %s seconds ---" % (time.time() - rec_time))
 
     return out_json
+
 
 @app.route('/entity2rec/' + version_api + "/feedback", methods=['POST'])
 def feedback():
@@ -281,6 +293,24 @@ def feedback():
     content['algorithm'] = algorithm
 
     feedback_collection.save(content)
+
+    return 'ok\n'
+
+
+@app.route('/entity2rec/' + version_api + "/discard", methods=['POST'])
+def discard():
+
+    content = request.get_json(silent=True)
+
+    try:
+        seed=content['seed']
+        user_id=content['user_id']
+    except KeyError:
+        raise ValueError('Please provide a seed item and a user_id.')
+
+    discard_collection.save(content)
+
+    discarded_items.append(seed)
 
     return 'ok\n'
 
