@@ -139,6 +139,7 @@ def read_item_metadata():
 
                 except KeyError:
                     logger.info("%s removed - no thumbnail in index\n" %item)
+                    del pop_dict[item]
                     continue
 
             item_metadata[item] = metadata
