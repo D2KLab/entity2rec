@@ -7,7 +7,7 @@ The command:
 `python entity2rec/main.py --dataset LibraryThing --run_all`
 will run entity2rec on the LibraryThing dataset. The first time it will generate the embeddings files and save them into emb/LibraryThing/. Afterwards, it will check whether the embeddings files already exist in the folder. Then, it computes property-specific relatedness scores and evaluates recommendations using a set of possible aggregation functions (LambdaMart, average, max and min) on a set of relevant metrics.
 
-The configuration of properties.json is used to select the properties.
+The configuration of properties.json is used to select the properties. By default, it will use hybrid property-specific subgraphs (feedback + content property). To use collaborative-content subgraphs, the user should replace the content of config/properties.json with that of config/properties_collaborative_content_example.json.
 
 ## Requirements
 
