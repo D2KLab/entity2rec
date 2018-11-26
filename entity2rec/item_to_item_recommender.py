@@ -21,7 +21,6 @@ class ItemToItemRecommender:
         seed_item = np.random.choice(items_liked_by_user, 1)[0]
 
         try:
-            print(self.model[seed_item])
 
             features = [self.model[seed_item][item]]
         except KeyError:
