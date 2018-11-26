@@ -18,12 +18,17 @@ class ItemToItemRecommender:
         
         # randomly choose one item
 
-        seed_item = np.random.choice(items_liked_by_user, 1)[0]
+        if len(items_liked_by_user) > 0:
 
-        try:
+            seed_item = np.random.choice(items_liked_by_user, 1)[0]            
 
-            features = [self.model[seed_item][item]]
-        except KeyError:
+            try:
+
+                features = [self.model[seed_item][item]]
+            except KeyError:
+                features = [0.]
+
+        else:
             features = [0.]
 
         return features
