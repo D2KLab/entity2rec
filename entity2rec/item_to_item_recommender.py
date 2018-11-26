@@ -86,9 +86,7 @@ if __name__ == '__main__':
     print('Finished computing features after %s seconds' % (time.time() - start_time))
 
     scores = evaluat.evaluate(itemrec, x_test, y_test, qids_test, items_test,
-                              write_to_file="results/%s/item_to_item_similarity/num%d_p%d_q%d_l%d_d%d_iter%d_winsize%d.csv"
-                                            % (args.dataset, args.num_walks, args.p, args.q, args.walk_length,
-                                               args.dimensions, args.iter, args.window_size))
+                              write_to_file="results/%s/item_to_item_similarity/%s" % (args.dataset, rec))
 
     print(scores)
 
