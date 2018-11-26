@@ -345,7 +345,11 @@ class Evaluator(object):
             for p in path_split[:-1]:
                 path = path + '/' + p
 
-            os.makedirs(path)
+            try:
+                os.makedirs(path)
+
+            except FileExistsError:
+                pass
 
         if not self.all_items:  # reading the features from file
 
