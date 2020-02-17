@@ -20,3 +20,5 @@ If you are using `pip`:
 ## Our Publications
 
 * Palumbo E., Rizzo G., Troncy R. (2017) [entity2rec: Learning User-Item Relatedness from Knowledge Graphs for Top-N Item Recommendation](https://enricopal.github.io/enricopal.github.io/publications/entity2rec.pdf). In 11th ACM Conference on Recommender Systems (RecSys) , Como, Italy, 
+
+* Palumbo E., Monti D., Rizzo G., Troncy R., Baralis E. (2020) [entity2rec: Property-specific Knowledge Graph Embeddings for Recommender Systems (https://www.sciencedirect.com/science/article/pii/S0957417420300610). Expert Systems with Applications 
